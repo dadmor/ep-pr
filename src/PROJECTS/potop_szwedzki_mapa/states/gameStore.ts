@@ -1,4 +1,4 @@
-// === optimized-gameStore.ts ===
+// === gameStore.ts ===
 import { create } from "zustand";
 import { 
   GAME_SETTINGS, 
@@ -441,7 +441,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     // If enemy starts first, use the timeline manager to schedule it
     if (enemy.startsFirst) {
-      GameTimeline.scheduleEnemyTurn(() => get().enemyTurn());
+      GameTimeline.scheduleAttack(() => get().enemyTurn());
     }
   },
 
@@ -462,11 +462,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     // Special effects using the timeline manager
     if (card.name === SPELL_NAMES.POLISH.MOBILIZATION) {
-      GameTimeline.scheduleCardDraw(() => get().drawCard(GAME_SETTINGS.MOBILIZATION_CARDS_DRAWN));
+      GameTimeline.scheduleAttack(() => get().drawCard(GAME_SETTINGS.MOBILIZATION_CARDS_DRAWN));
     }
     
     if (card.keywords?.includes(CARD_KEYWORDS.SCOUT)) {
-      GameTimeline.scheduleCardDraw(() => get().drawCard(1));
+      GameTimeline.scheduleAttack(() => get().drawCard(1));
     }
   },
 
@@ -524,19 +524,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         const targetCurrentHP = target.currentHP || target.defense;
         const newHP = Math.max(0, targetCurrentHP - damage);
         
+        // IMPORTANT CHANGE: We always keep the card on the battlefield, even if destroyed (HP = 0)
+        newState.enemy!.battlefield = newState.enemy!.battlefield.map(card =>
+          card.instanceId === target.instanceId ? { ...card, currentHP: newHP } : card
+        );
+        
         if (newHP > 0) {
-          newState.enemy!.battlefield = newState.enemy!.battlefield.map(card =>
-            card.instanceId === target.instanceId ? { ...card, currentHP: newHP } : card
-          );
           newState.game.eventLog = [
             `⚔️ ${attacker.name} atakuje ${target.name} za ${damage} obrażeń! (${newHP}/${target.maxHP || target.defense} HP)`,
             ...newState.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
           ];
         } else {
-          newState.enemy!.battlefield = newState.enemy!.battlefield.filter(card =>
-            card.instanceId !== target.instanceId
-          );
-          newState.enemy!.discardPile = [...newState.enemy!.discardPile, target];
           newState.game.eventLog = [
             `💀 ${target.name} pada pod atakiem ${attacker.name}!`,
             ...newState.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
@@ -597,9 +595,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       game: { ...state.game, turn: state.game.turn + 1 }
     }));
 
-    // Schedule enemy turn and card draw with timeline manager
-    GameTimeline.scheduleEnemyTurn(() => get().enemyTurn());
-    GameTimeline.scheduleCardDraw(() => get().drawCard(1));
+    // Schedule enemy turn with timeline manager
+    GameTimeline.scheduleAttack(() => get().enemyTurn());
+    get().drawCard(1);
   },
 
   enemyTurn: () => {
@@ -621,7 +619,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }));
 
     // Execute enemy turn logic
-    GameTimeline.scheduleEnemyTurn(() => {
+    GameTimeline.scheduleAttack(() => {
       const state = get();
       if (!state.enemy) return;
 
@@ -691,7 +689,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         });
 
         cardsPlayed++;
-        GameTimeline.scheduleCardPlay(playNextCard);
+        GameTimeline.scheduleAttack(playNextCard);
       };
 
       const startAttackPhase = () => {
@@ -715,14 +713,22 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           const currentState = get();
           const target = EnemyService.chooseAttackTarget(currentState.cards.battlefield);
 
-          if (target) {
-            // Attack on player's card
-            const damage = GameMechanics.calculateCardAttack(attacker, currentState.enemy!.battlefield);
-            const targetCurrentHP = target.currentHP || target.defense;
-            const newHP = Math.max(0, targetCurrentHP - damage);
+          // Update UI to show attacking card
+          uiStore.getState().setAttackingCard(attacker);
 
-            set(state => {
-              if (newHP > 0) {
+          if (target) {
+            // Update UI to show target card
+            uiStore.getState().setTargetCard(target);
+            
+            // Use timeline for attack animation
+            GameTimeline.scheduleAttack(() => {
+              // Attack on player's card
+              const damage = GameMechanics.calculateCardAttack(attacker, currentState.enemy!.battlefield);
+              const targetCurrentHP = target.currentHP || target.defense;
+              const newHP = Math.max(0, targetCurrentHP - damage);
+
+              set(state => {
+                // IMPORTANT: Keep cards on battlefield even when destroyed
                 return {
                   ...state,
                   cards: {
@@ -735,61 +741,76 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
                   },
                   game: {
                     ...state.game,
-                    eventLog: [
-                      `⚔️ ${attacker.name} atakuje ${target.name} za ${damage} obrażeń! (${newHP}/${target.maxHP || target.defense} HP)`,
-                      ...state.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
-                    ]
+                    eventLog: newHP > 0
+                      ? [
+                          `⚔️ ${attacker.name} atakuje ${target.name} za ${damage} obrażeń! (${newHP}/${target.maxHP || target.defense} HP)`,
+                          ...state.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
+                        ]
+                      : [
+                          `💀 ${target.name} pada pod atakiem ${attacker.name}!`,
+                          ...state.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
+                        ]
                   }
                 };
-              } else {
-                return {
-                  ...state,
-                  cards: {
-                    ...state.cards,
-                    battlefield: state.cards.battlefield.filter(card => 
-                      card.instanceId !== target.instanceId
-                    ),
-                    discardPile: [...state.cards.discardPile, target]
-                  },
-                  game: {
-                    ...state.game,
-                    eventLog: [
-                      `💀 ${target.name} pada pod atakiem ${attacker.name}!`,
-                      ...state.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
-                    ]
-                  }
-                };
-              }
+              });
+              
+              // Clear UI indicators
+              uiStore.getState().setAttackingCard(null);
+              uiStore.getState().setTargetCard(null);
+              
+              // Mark attacker as used
+              set(state => ({
+                ...state,
+                enemy: {
+                  ...state.enemy!,
+                  battlefield: state.enemy!.battlefield.map(card =>
+                    card.instanceId === attacker.instanceId ? { ...card, used: true } : card
+                  )
+                }
+              }));
+
+              attackIndex++;
+              executeNextAttack();
             });
           } else {
             // Attack on player
-            const damage = GameMechanics.calculateCardAttack(attacker, currentState.enemy!.battlefield);
-            set(state => ({
-              ...state,
-              player: { ...state.player, hp: Math.max(0, state.player.hp - damage) },
-              game: {
-                ...state.game,
-                eventLog: [
-                  `💔 ${attacker.name} zadaje ci ${damage} obrażeń!`,
-                  ...state.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
-                ]
-              }
-            }));
+            // Set target as "player"
+            uiStore.getState().setTargetCard("player");
+            
+            // Use timeline for attack animation
+            GameTimeline.scheduleAttack(() => {
+              const damage = GameMechanics.calculateCardAttack(attacker, currentState.enemy!.battlefield);
+              set(state => ({
+                ...state,
+                player: { ...state.player, hp: Math.max(0, state.player.hp - damage) },
+                game: {
+                  ...state.game,
+                  eventLog: [
+                    `💔 ${attacker.name} zadaje ci ${damage} obrażeń!`,
+                    ...state.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
+                  ]
+                }
+              }));
+              
+              // Clear UI indicators
+              uiStore.getState().setAttackingCard(null);
+              uiStore.getState().setTargetCard(null);
+
+              // Mark attacker as used
+              set(state => ({
+                ...state,
+                enemy: {
+                  ...state.enemy!,
+                  battlefield: state.enemy!.battlefield.map(card =>
+                    card.instanceId === attacker.instanceId ? { ...card, used: true } : card
+                  )
+                }
+              }));
+
+              attackIndex++;
+              executeNextAttack();
+            });
           }
-
-          // Mark attacker as used
-          set(state => ({
-            ...state,
-            enemy: {
-              ...state.enemy!,
-              battlefield: state.enemy!.battlefield.map(card =>
-                card.instanceId === attacker.instanceId ? { ...card, used: true } : card
-              )
-            }
-          }));
-
-          attackIndex++;
-          GameTimeline.scheduleAttack(executeNextAttack);
         };
 
         if (attackers.length > 0) {
@@ -800,7 +821,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       };
 
       // Start the chain of actions
-      GameTimeline.scheduleCardPlay(playNextCard);
+      playNextCard();
     });
   },
 
@@ -828,7 +849,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }));
 
     // Prepare next enemy
-    GameTimeline.scheduleVictory(() => {
+    GameTimeline.scheduleAttack(() => {
       const currentState = get();
       const currentEnemyId = currentState.enemy?.id || 1;
       const nextEnemyIndex = ENEMY_SCENARIOS.findIndex(e => e.id === currentEnemyId + 1);
@@ -861,7 +882,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
       // If new enemy starts first
       if (nextEnemy.startsFirst) {
-        GameTimeline.scheduleEnemyTurn(() => get().enemyTurn());
+        GameTimeline.scheduleAttack(() => get().enemyTurn());
       }
     });
   },

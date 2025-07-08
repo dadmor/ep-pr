@@ -18,14 +18,18 @@ export interface UIState {
   notification: Notification | null;
   pendingAction: PendingAction | null;
   selectedCard: Card | null;
-  tooltipCard: Card | null; // Add this to store the card currently showing tooltip
+  tooltipCard: Card | null;
+  attackingCard: Card | null;  // Track the card that is currently attacking
+  targetCard: Card | "enemy" | "player" | null;  // Track the target of the attack
 }
 
 export interface UIActions {
   setNotification: (notification: Notification | null) => void;
   setPendingAction: (action: PendingAction | null) => void;
   setSelectedCard: (card: Card | null) => void;
-  setTooltipCard: (card: Card | null) => void; // Add this action
+  setTooltipCard: (card: Card | null) => void;
+  setAttackingCard: (card: Card | null) => void;
+  setTargetCard: (target: Card | "enemy" | "player" | null) => void;
 }
 
 // === UI STORE ===
@@ -33,7 +37,9 @@ export const uiStore = create<UIState & UIActions>((set) => ({
   notification: null,
   pendingAction: null,
   selectedCard: null,
-  tooltipCard: null, // Initialize as null
+  tooltipCard: null,
+  attackingCard: null,
+  targetCard: null,
 
   setNotification: (notification: Notification | null) => {
     set({ notification });
@@ -41,7 +47,7 @@ export const uiStore = create<UIState & UIActions>((set) => ({
     if (notification) {
       setTimeout(() => {
         set(state => {
-          // Upewnij się, że nie czyścimy nowszego powiadomienia
+          // Make sure we don't clear a newer notification
           if (state.notification === notification) {
             return { notification: null };
           }
@@ -61,5 +67,13 @@ export const uiStore = create<UIState & UIActions>((set) => ({
   
   setTooltipCard: (card: Card | null) => {
     set({ tooltipCard: card });
+  },
+  
+  setAttackingCard: (card: Card | null) => {
+    set({ attackingCard: card });
+  },
+  
+  setTargetCard: (target: Card | "enemy" | "player" | null) => {
+    set({ targetCard: target });
   }
 }));

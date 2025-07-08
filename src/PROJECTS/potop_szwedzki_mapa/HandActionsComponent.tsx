@@ -1,9 +1,8 @@
 import React, { useMemo } from "react";
 import { useGameStore } from "./states/gameStore";
-import { useTimelineStore } from "./states/timelineManager";
 import GameCard from "./GameCard";
 
-const HandActionsComponent: React.FC = () => {
+const HandActionsComponent = () => {
   // Hand state
   const hand = useGameStore((state) => state.cards.hand);
   const playCard = useGameStore((state) => state.playCard);
@@ -19,13 +18,6 @@ const HandActionsComponent: React.FC = () => {
   // Game actions
   const endTurn = useGameStore((state) => state.endTurn);
   const initializeGame = useGameStore((state) => state.initializeGame);
-  
-  // Timeline state and actions
-  const isTimelinePlaying = useTimelineStore((state) => state.isPlaying);
-  const timelineSpeed = useTimelineStore((state) => state.speed);
-  const setTimelineSpeed = useTimelineStore((state) => state.setSpeed);
-  const pauseTimeline = useTimelineStore((state) => state.pauseTimeline);
-  const resumeTimeline = useTimelineStore((state) => state.resumeTimeline);
 
   // Memoize playable cards to avoid unnecessary re-renders
   const { playableCards, unplayableCards } = useMemo(() => ({
@@ -59,21 +51,6 @@ const HandActionsComponent: React.FC = () => {
     if (window.confirm("Czy na pewno chcesz rozpocząć nową grę?")) {
       initializeGame();
     }
-  };
-  
-  const toggleTimelinePlayback = () => {
-    if (isTimelinePlaying) {
-      pauseTimeline();
-    } else {
-      resumeTimeline();
-    }
-  };
-  
-  const changeAnimationSpeed = () => {
-    const speeds = [0.5, 1, 1.5, 2, 3];
-    const currentIndex = speeds.indexOf(timelineSpeed);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    setTimelineSpeed(speeds[nextIndex]);
   };
 
   return (
@@ -155,23 +132,6 @@ const HandActionsComponent: React.FC = () => {
             >
               ⏭️ Zakończ turę
             </button>
-            
-            {/* Animation controls */}
-            <div className="flex space-x-1">
-              <button
-                onClick={toggleTimelinePlayback}
-                className="flex-1 px-2 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors text-xs font-medium"
-              >
-                {isTimelinePlaying ? "⏸️ Pauza" : "▶️ Wznów"}
-              </button>
-              
-              <button
-                onClick={changeAnimationSpeed}
-                className="flex-1 px-2 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors text-xs font-medium"
-              >
-                {timelineSpeed}x
-              </button>
-            </div>
             
             {/* Reset game button */}
             <button

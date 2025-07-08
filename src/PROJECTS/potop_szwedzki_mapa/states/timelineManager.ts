@@ -1,96 +1,68 @@
-// timelineManager.js - Prosty menedżer animacji
+// timelineManager.js - Simplified animation manager with focused delays only for battles
 import { create } from "zustand";
 
-// Store do zarządzania timeoutami i animacjami
+// Simple store for managing animation timeouts
 export const useTimelineStore = create((set, get) => ({
-  // Kolekcja aktywnych timeoutów
+  // Collection of active timeouts
   timeouts: {},
-  
-  // Dodaj timeout z ID
+
+  // Add a timeout with ID
   addTimeout: (id, timeoutId) => {
-    set(state => ({
-      timeouts: { ...state.timeouts, [id]: timeoutId }
+    set((state) => ({
+      timeouts: { ...state.timeouts, [id]: timeoutId },
     }));
   },
-  
-  // Wyczyść pojedynczy timeout
+
+  // Clear a single timeout
   clearTimeout: (id) => {
     const { timeouts } = get();
     if (timeouts[id]) {
       clearTimeout(timeouts[id]);
-      set(state => {
+      set((state) => {
         const newTimeouts = { ...state.timeouts };
         delete newTimeouts[id];
         return { timeouts: newTimeouts };
       });
     }
   },
-  
-  // Wyczyść wszystkie timeouty
+
+  // Clear all timeouts
   clearAllTimeouts: () => {
     const { timeouts } = get();
-    Object.values(timeouts).forEach(id => clearTimeout(id));
+    Object.values(timeouts).forEach((id) => clearTimeout(id));
     set({ timeouts: {} });
   },
-  
-  // Prędkość animacji (mnożnik)
-  speed: 1,
-  
-  // Ustaw prędkość animacji
-  setSpeed: (speed) => set({ speed }),
-  
-  // Czy animacje są włączone
-  isPlaying: true,
-  
-  // Wstrzymaj animacje
-  pause: () => set({ isPlaying: false }),
-  
-  // Wznów animacje
-  resume: () => set({ isPlaying: true }),
 }));
 
-// Pomocnicze funkcje do zarządzania timeoutami w grze
+// Simplified animation delays - focused only on battle actions
 const GameTimeline = {
-  // Zaplanuj akcję z timeoutem
+  // Schedule an action with timeout
   schedule: (id, callback, delay) => {
-    // Pobierz aktualny stan
+    // Get current state
     const store = useTimelineStore.getState();
-    
-    // Wyczyść poprzedni timeout o tym ID (jeśli istnieje)
+
+    // Clear previous timeout with this ID (if exists)
     store.clearTimeout(id);
-    
-    // Jeśli animacje są wstrzymane, nie twórz nowego timeoutu
-    if (!store.isPlaying) return id;
-    
-    // Dostosuj opóźnienie do prędkości
-    const adjustedDelay = delay / store.speed;
-    
-    // Utwórz i zapisz nowy timeout
+
+    // Create and save new timeout
     const timeoutId = setTimeout(() => {
       callback();
-      store.clearTimeout(id); // Auto-cleanup po wykonaniu
-    }, adjustedDelay);
-    
+      store.clearTimeout(id); // Auto-cleanup after execution
+    }, delay);
+
     store.addTimeout(id, timeoutId);
     return id;
   },
-  
-  // Typowe akcje w grze
-  scheduleCardDraw: (callback) => 
-    GameTimeline.schedule(`draw-${Date.now()}`, callback, 500),
-    
-  scheduleCardPlay: (callback) => 
-    GameTimeline.schedule(`play-${Date.now()}`, callback, 700),
-    
-  scheduleAttack: (callback) => 
+
+  // Battle action timings - only essential animations
+  scheduleAttack: (callback) =>
     GameTimeline.schedule(`attack-${Date.now()}`, callback, 800),
-    
-  scheduleEnemyTurn: (callback) => 
-    GameTimeline.schedule(`enemy-turn-${Date.now()}`, callback, 1000),
-    
-  // Metoda do czyszczenia wszystkich timeoutów
-  cancelAllActions: () => 
-    useTimelineStore.getState().clearAllTimeouts()
+
+  scheduleCardDamage: (callback) =>
+    GameTimeline.schedule(`damage-${Date.now()}`, callback, 500),
+
+  // Method to clear all timeouts
+  cancelAllActions: () => useTimelineStore.getState().clearAllTimeouts(),
 };
 
 export default GameTimeline;

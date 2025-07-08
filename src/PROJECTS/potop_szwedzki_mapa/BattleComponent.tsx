@@ -1,10 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useGameStore } from "./states/gameStore";
 import { uiStore } from "./states/uiStore";
 import GameCard from "./GameCard";
 import { Shield, Sword, Heart } from "lucide-react";
 
-const BattleComponent: React.FC = () => {
+const BattleComponent = () => {
   // Game state
   const gamePhase = useGameStore((state) => state.game.phase);
   const playerBattlefield = useGameStore((state) => state.cards.battlefield);
@@ -20,6 +20,11 @@ const BattleComponent: React.FC = () => {
   const pendingAction = uiStore((state) => state.pendingAction);
   const selectedCard = uiStore((state) => state.selectedCard);
   
+  // Animation state
+  const [attackingCard, setAttackingCard] = useState(null);
+  const [targetCard, setTargetCard] = useState(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  
   // Calculate enemy health percentage for progress bar
   const enemyHealthPercentage = useMemo(() => {
     if (!enemy) return 0;
@@ -32,7 +37,7 @@ const BattleComponent: React.FC = () => {
   }, [playerHp]);
 
   // Handle player card click for attack
-  const handlePlayerCardClick = (card: any) => {
+  const handlePlayerCardClick = (card) => {
     if (gamePhase === "main" && 
         card.canAttack && 
         !card.used && 
@@ -42,17 +47,39 @@ const BattleComponent: React.FC = () => {
     }
   };
 
-  // Handle enemy card click during target selection
-  const handleEnemyCardClick = (card: any) => {
+  // Handle enemy card click during target selection with animation
+  const handleEnemyCardClick = (card) => {
     if (gamePhase === "selectTarget" && pendingAction?.attacker && pendingAction.type === "selectAttackTarget") {
-      executeAttack(pendingAction.attacker, card);
+      // Start animation
+      setAttackingCard(pendingAction.attacker);
+      setTargetCard(card);
+      setIsAnimating(true);
+      
+      // Execute attack after animation delay
+      setTimeout(() => {
+        executeAttack(pendingAction.attacker, card);
+        setIsAnimating(false);
+        setAttackingCard(null);
+        setTargetCard(null);
+      }, 800); // Delay only for attack animation
     }
   };
   
   // Handle direct attack on enemy
   const handleEnemyAttack = () => {
     if (gamePhase === "selectTarget" && pendingAction?.attacker && pendingAction.type === "selectAttackTarget") {
-      executeAttack(pendingAction.attacker, "enemy");
+      // Start animation
+      setAttackingCard(pendingAction.attacker);
+      setTargetCard("enemy");
+      setIsAnimating(true);
+      
+      // Execute attack after animation delay
+      setTimeout(() => {
+        executeAttack(pendingAction.attacker, "enemy");
+        setIsAnimating(false);
+        setAttackingCard(null);
+        setTargetCard(null);
+      }, 800); // Delay only for attack animation
     }
   };
   
@@ -84,7 +111,7 @@ const BattleComponent: React.FC = () => {
       <div className="flex justify-between items-center mb-2">
         {/* Enemy header */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-red-100 px-2 py-1 rounded text-xs">
+          <div className={`flex items-center ${targetCard === "enemy" ? "bg-red-200 animate-pulse" : "bg-red-100"} px-2 py-1 rounded text-xs transition-colors duration-300`}>
             <Heart size={12} className="text-red-600 mr-1" />
             <span>{enemy.currentHp}/{enemy.maxHp}</span>
           </div>
@@ -135,9 +162,11 @@ const BattleComponent: React.FC = () => {
               <>
                 {/* Enemy portrait/avatar - clickable during target selection */}
                 <div 
-                  className={`p-1.5 rounded-lg border border-amber-300 bg-amber-100/60 backdrop-blur-sm text-center h-20 w-16
+                  className={`p-1.5 rounded-lg border ${targetCard === "enemy" ? "border-red-500 bg-red-100/80 animate-pulse" : "border-amber-300 bg-amber-100/60"} 
+                    backdrop-blur-sm text-center h-20 w-16
                     ${gamePhase === "selectTarget" ? "cursor-pointer hover:bg-amber-200/70 hover:border-amber-400" : ""}
                     ${gamePhase === "enemyTurn" ? "border-red-300 bg-red-50/60" : ""}
+                    transition-all duration-200
                   `}
                   onClick={gamePhase === "selectTarget" ? handleEnemyAttack : undefined}
                 >
@@ -168,6 +197,7 @@ const BattleComponent: React.FC = () => {
                         (target) => target.instanceId === card.instanceId
                       )
                     }
+                    isBeingAttacked={targetCard && targetCard.instanceId === card.instanceId}
                     canBeAttacked={
                       gamePhase === "selectTarget" &&
                       pendingAction?.type === "selectAttackTarget"
@@ -205,6 +235,7 @@ const BattleComponent: React.FC = () => {
                     compact={true}
                     onClick={() => handlePlayerCardClick(card)}
                     isSelected={selectedCard?.instanceId === card.instanceId}
+                    isAttacking={attackingCard && attackingCard.instanceId === card.instanceId}
                   />
                 ))}
                 {playerHasMoreCards && (
@@ -240,6 +271,11 @@ const BattleComponent: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Disable all interactions during animation */}
+      {isAnimating && (
+        <div className="absolute inset-0 bg-transparent cursor-not-allowed z-20"></div>
+      )}
     </div>
   );
 };
