@@ -1,21 +1,21 @@
+// === EnemyPanel.tsx ===
 import React from "react";
 import { useGameStore } from "./store";
 import GameCard from "./GameCard";
 
 const EnemyPanel: React.FC = () => {
-  const currentEnemy = useGameStore((state) => state.currentEnemy);
-  const gamePhase = useGameStore((state) => state.gamePhase);
-  const pendingAction = useGameStore((state) => state.pendingAction);
+  const enemy = useGameStore((state) => state.enemy);
+  const gamePhase = useGameStore((state) => state.game.phase);
+  const pendingAction = useGameStore((state) => state.ui.pendingAction);
   const executeAttack = useGameStore((state) => state.executeAttack);
 
-  if (!currentEnemy) return null;
+  if (!enemy) return null;
 
   const handleEnemyCardClick = (card: any) => {
     if (
       gamePhase === "selectTarget" &&
       pendingAction?.type === "selectAttackTarget"
     ) {
-      // Sprawdź czy karta może być celem
       const canTarget = pendingAction.possibleTargets.some(
         (target) => target.instanceId === card.instanceId
       );
@@ -47,23 +47,23 @@ const EnemyPanel: React.FC = () => {
               onClick={handleAttackEnemy}
               className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-full text-sm font-bold transition-colors"
             >
-              🎯 Atakuj {currentEnemy.name} ({pendingAction?.damage} dmg)
+              🎯 Atakuj {enemy.name} ({pendingAction?.damage} dmg)
             </button>
           </div>
         )}
 
         <div className="flex justify-center gap-2 flex-wrap min-h-[120px] items-center">
-          {currentEnemy.battlefield.length === 0 ? (
+          {enemy.battlefield.length === 0 ? (
             <div className="text-red-700 italic text-center">
               <p>Wróg nie ma jednostek na polu bitwy</p>
               {gamePhase === "selectTarget" && (
                 <p className="text-sm mt-2 text-red-600">
-                  💡 Możesz zaatakować bezpośrednio {currentEnemy.name}
+                  💡 Możesz zaatakować bezpośrednio {enemy.name}
                 </p>
               )}
             </div>
           ) : (
-            currentEnemy.battlefield.map((unit) => {
+            enemy.battlefield.map((unit) => {
               const isValidTarget =
                 gamePhase === "selectTarget" &&
                 pendingAction?.possibleTargets.some(
@@ -88,28 +88,26 @@ const EnemyPanel: React.FC = () => {
 
       <div className="flex items-center gap-4">
         {/* Nagłówek z informacjami */}
-        <h3 className="text-red-700 font-bold flex">⚔️ {currentEnemy.name}</h3>
+        <h3 className="text-red-700 font-bold flex">⚔️ {enemy.name}</h3>
 
         <div className="flex-1 flex items-center justify-between bg-red-100 rounded px-2 py-1 gap-2">
-          <span className="text-sm withespace-nowrap">
-            HP:&nbsp;{currentEnemy.currentHp}/{currentEnemy.maxHp}
+          <span className="text-sm whitespace-nowrap">
+            HP:&nbsp;{enemy.currentHp}/{enemy.maxHp}
           </span>
           {/* Pasek HP przeciwnika */}
           <div className="w-full bg-red-200 rounded-full h-2">
             <div
               className="bg-red-500 h-2 rounded-full transition-all duration-300"
               style={{
-                width: `${
-                  (currentEnemy.currentHp / currentEnemy.maxHp) * 100
-                }%`,
+                width: `${(enemy.currentHp / enemy.maxHp) * 100}%`,
               }}
             ></div>
           </div>
 
           {/* Ukryte karty w ręce przeciwnika */}
-          {currentEnemy.hand.length > 0 && (
+          {enemy.hand.length > 0 && (
             <div className="flex justify-center gap-1">
-              {currentEnemy.hand.slice(0, 7).map((_, index) => (
+              {enemy.hand.slice(0, 7).map((_, index) => (
                 <div
                   key={index}
                   className="w-4 h-6 bg-gradient-to-b from-red-800 to-red-900 rounded-sm border border-red-700 flex items-center justify-center"
@@ -117,9 +115,9 @@ const EnemyPanel: React.FC = () => {
                   <span className="text-red-200 text-md -mt-1">♠</span>
                 </div>
               ))}
-              {currentEnemy.hand.length > 7 && (
+              {enemy.hand.length > 7 && (
                 <div className="text-red-600 text-xs self-center ml-1">
-                  +{currentEnemy.hand.length - 7}
+                  +{enemy.hand.length - 7}
                 </div>
               )}
             </div>
@@ -128,7 +126,7 @@ const EnemyPanel: React.FC = () => {
       </div>
 
       <span className="text-sm block font-normal">
-        ⚡{currentEnemy.energy} 🤖 {currentEnemy.ai}
+        ⚡{enemy.energy} 🤖 {enemy.ai}
       </span>
     </div>
   );

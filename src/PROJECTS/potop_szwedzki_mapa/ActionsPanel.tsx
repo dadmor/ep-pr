@@ -1,17 +1,19 @@
+
+// === ActionsPanel.tsx ===
 import React from "react";
 import { useGameStore } from "./store";
 import { Sword, Shield, Clock, Play } from "lucide-react";
 
 const ActionsPanel: React.FC = () => {
-  const gamePhase = useGameStore((state) => state.gamePhase);
-  const energy = useGameStore((state) => state.energy);
-  const maxEnergy = useGameStore((state) => state.maxEnergy);
-  const turn = useGameStore((state) => state.turn);
-  const battlefield = useGameStore((state) => state.battlefield);
-  const currentEnemy = useGameStore((state) => state.currentEnemy);
+  const gamePhase = useGameStore((state) => state.game.phase);
+  const energy = useGameStore((state) => state.player.energy);
+  const maxEnergy = useGameStore((state) => state.player.maxEnergy);
+  const turn = useGameStore((state) => state.game.turn);
+  const battlefield = useGameStore((state) => state.cards.battlefield);
+  const enemy = useGameStore((state) => state.enemy);
   const endTurn = useGameStore((state) => state.endTurn);
   const cancelTargetSelection = useGameStore((state) => state.cancelTargetSelection);
-  const pendingAction = useGameStore((state) => state.pendingAction);
+  const pendingAction = useGameStore((state) => state.ui.pendingAction);
 
   const canEndTurn = gamePhase === "main";
   const hasAttackingUnits = battlefield.some(card => 
@@ -41,7 +43,6 @@ const ActionsPanel: React.FC = () => {
     <div className="bg-yellow-50/60 backdrop-blur-lg rounded-xl p-4 shadow-lg/50 space-y-4 max-w-64 w-64">
       {/* Nagłówek z fazą gry */}
       <div className="text-center">
-       
         <p className="text-amber-700 text-sm">{getPhaseDescription()}</p>
       </div>
 
@@ -58,8 +59,6 @@ const ActionsPanel: React.FC = () => {
           ></div>
         </div>
       </div>
-
-     
 
       {/* Główne akcje */}
       <div className="space-y-2">
@@ -94,10 +93,6 @@ const ActionsPanel: React.FC = () => {
           </div>
         )}
       </div>
-
-    
-
-     
     </div>
   );
 };

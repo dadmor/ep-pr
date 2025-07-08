@@ -1,9 +1,9 @@
-// ./EventLogComponent.tsx
+// === EventLogComponent.tsx ===
 import React from "react";
 import { useGameStore } from "./store";
 
 const EventLogComponent: React.FC = () => {
-  const eventLog = useGameStore((state) => state.eventLog);
+  const eventLog = useGameStore((state) => state.game.eventLog);
 
   return (
     <div className="max-w-64 w-64">

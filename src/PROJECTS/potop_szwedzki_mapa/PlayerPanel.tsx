@@ -1,12 +1,13 @@
+// === PlayerPanel.tsx ===
 import React from "react";
 import { useGameStore } from "./store";
 import GameCard from "./GameCard";
 
 const PlayerPanel: React.FC = () => {
-  const battlefield = useGameStore((state) => state.battlefield);
-  const playerHp = useGameStore((state) => state.playerHp);
-  const gamePhase = useGameStore((state) => state.gamePhase);
-  const selectedCard = useGameStore((state) => state.selectedCard);
+  const battlefield = useGameStore((state) => state.cards.battlefield);
+  const playerHp = useGameStore((state) => state.player.hp);
+  const gamePhase = useGameStore((state) => state.game.phase);
+  const selectedCard = useGameStore((state) => state.ui.selectedCard);
   const selectAttackTarget = useGameStore((state) => state.selectAttackTarget);
   const cancelTargetSelection = useGameStore((state) => state.cancelTargetSelection);
 

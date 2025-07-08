@@ -10,24 +10,22 @@ import NotificationComponent from "./NotificationComponent";
 import HeaderComponent from "./HeaderComponent";
 
 const PotopSzwedzki: React.FC = () => {
-  const playerHp = useGameStore((state) => state.playerHp);
-  const currentEnemy = useGameStore((state) => state.currentEnemy);
+  // Fixed state selectors to match the actual store structure
+  const playerHp = useGameStore((state) => state.player.hp);
+  const enemy = useGameStore((state) => state.enemy);
+  const gamePhase = useGameStore((state) => state.game.phase);
+  const gameTurn = useGameStore((state) => state.game.turn);
   const initializeGame = useGameStore((state) => state.initializeGame);
-  const handleVictory = useGameStore((state) => state.handleVictory);
-  const turn = useGameStore((state) => state.turn);
 
   useEffect(() => {
     initializeGame();
   }, [initializeGame]);
 
-  useEffect(() => {
-    if (currentEnemy && currentEnemy.currentHp !== undefined && currentEnemy.currentHp <= 0) {
-      handleVictory();
-    }
-  }, [currentEnemy?.currentHp, handleVictory]);
+  // No need for the victory effect as the store already handles it
+  // in the executeAttack and enemyTurn functions
 
   // Ekran przegranej
-  if (playerHp <= 0) {
+  if (gamePhase === "defeat" || playerHp <= 0) {
     return (
       <div className="relative min-h-screen bg-gradient-to-br from-yellow-100 via-amber-50 to-orange-100 text-amber-900 flex flex-col items-center justify-center p-8 relative">
         <MapComponent />
@@ -36,7 +34,7 @@ const PotopSzwedzki: React.FC = () => {
           <p className="text-xl mb-4">
             Polska padła pod naporem szwedzkiej potęgi...
           </p>
-          <p className="text-lg mb-6">Przetrwałeś {turn} tur</p>
+          <p className="text-lg mb-6">Przetrwałeś {gameTurn} tur</p>
           <button
             onClick={initializeGame}
             className="bg-amber-300 hover:bg-amber-400 px-6 py-3 rounded-lg font-bold transition-colors text-amber-900 shadow-md"

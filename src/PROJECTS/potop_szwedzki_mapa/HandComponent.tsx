@@ -1,12 +1,14 @@
+// === HandComponent.tsx ===
 import React from "react";
 import { useGameStore } from "./store";
 import GameCard from "./GameCard";
 
 const HandComponent: React.FC = () => {
-  const hand = useGameStore((state) => state.hand);
+  const hand = useGameStore((state) => state.cards.hand);
   const playCard = useGameStore((state) => state.playCard);
-  const gamePhase = useGameStore((state) => state.gamePhase);
-  const energy = useGameStore((state) => state.energy);
+  const gamePhase = useGameStore((state) => state.game.phase);
+  const energy = useGameStore((state) => state.player.energy);
+  const canPlayCard = useGameStore((state) => state.canPlayCard);
 
   const handleCardPlay = (card: any) => {
     if (gamePhase === "main") {
@@ -14,8 +16,8 @@ const HandComponent: React.FC = () => {
     }
   };
 
-  const playableCards = hand.filter((card) => card.cost <= energy);
-  const unplayableCards = hand.filter((card) => card.cost > energy);
+  const playableCards = hand.filter((card) => canPlayCard(card));
+  const unplayableCards = hand.filter((card) => !canPlayCard(card));
 
   return (
     <div className="flex-1 space-y-2 z-20">

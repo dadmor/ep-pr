@@ -1,4 +1,4 @@
-import React from "react";
+
 
 const HistoricalPolandMap = () => {
   // Dane prowincji z zaokrąglonymi współrzędnymi
@@ -78,53 +78,51 @@ const HistoricalPolandMap = () => {
   ];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex items-center justify-center">
+    <div className="fixed inset-0 w-screen h-screen flex items-center justify-center py-52">
       <svg viewBox="0 0 809 699" className="w-full h-full -mt-20">
-  <defs>
-    <radialGradient id="fadeMaskGradient" cx="50%" cy="50%" r="75%">
-      <stop offset="20%" stopColor="white" stopOpacity="1" />
-      <stop offset="70%" stopColor="white" stopOpacity="0" />
-    </radialGradient>
-    <mask id="fadeMask">
-      <rect width="100%" height="100%" fill="url(#fadeMaskGradient)" />
-    </mask>
-  </defs>
+        <defs>
+          <radialGradient id="fadeMaskGradient" cx="50%" cy="50%" r="75%">
+            <stop offset="20%" stopColor="white" stopOpacity="1" />
+            <stop offset="70%" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+          <mask id="fadeMask">
+            <rect width="100%" height="100%" fill="url(#fadeMaskGradient)" />
+          </mask>
+        </defs>
 
-  <g mask="url(#fadeMask)">
-    {provinces.map((province) => (
-      <g key={province.id}>
-        <polygon
-          points={province.path}
-          fill={province.color}
-          stroke="#8B4513"
-          strokeWidth="1.5"
-          opacity="0.8"
-          className="hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-        />
-        <text
-          x={province.path.split(" ").reduce((sum, point, i, arr) => {
-            const x = parseInt(point.split(",")[0]);
-            return sum + x / arr.length;
-          }, 0)}
-          y={province.path.split(" ").reduce((sum, point, i, arr) => {
-            const y = parseInt(point.split(",")[1]);
-            return sum + y / arr.length;
-          }, 0)}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="#5D4E37"
-          fontSize="12"
-          fontWeight="600"
-          className="pointer-events-none drop-shadow-sm select-none"
-        >
-          {province.name}
-        </text>
-      </g>
-    ))}
-  </g>
-</svg>
-
-
+        <g mask="url(#fadeMask)">
+          {provinces.map((province) => (
+            <g key={province.id}>
+              <polygon
+                points={province.path}
+                fill={province.color}
+                stroke="#8B4513"
+                strokeWidth="1.5"
+                opacity="0.8"
+                className="hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+              />
+              <text
+                x={province.path.split(" ").reduce((sum, point, i, arr) => {
+                  const x = parseInt(point.split(",")[0]);
+                  return sum + x / arr.length;
+                }, 0)}
+                y={province.path.split(" ").reduce((sum, point, i, arr) => {
+                  const y = parseInt(point.split(",")[1]);
+                  return sum + y / arr.length;
+                }, 0)}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#5D4E37"
+                fontSize="12"
+                fontWeight="600"
+                className="pointer-events-none drop-shadow-sm"
+              >
+                {province.name}
+              </text>
+            </g>
+          ))}
+        </g>
+      </svg>
     </div>
   );
 };
