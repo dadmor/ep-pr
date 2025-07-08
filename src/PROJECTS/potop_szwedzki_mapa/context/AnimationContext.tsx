@@ -1,7 +1,6 @@
 // src/PROJECTS/potop_szwedzki_mapa/context/AnimationContext.tsx
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
 import { AnimationUtils, useCardRefs } from '../utils/animations';
-import { Card as CardType } from '../types';
 
 interface AnimationContextType {
   // Card ref registration

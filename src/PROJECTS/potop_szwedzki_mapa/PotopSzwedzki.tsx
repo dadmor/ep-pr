@@ -306,13 +306,7 @@ const GameWithAnimations: React.FC = () => {
           // Find the card element that was just added to the DOM
           const cardElement = opponentAreaRef.current.querySelector(`[data-card-id="${tempCardId}"]`);
           
-          if (cardElement) {
-            // Create start position (from top of screen)
-            const startPosition = {
-              top: opponentAreaRef.current.getBoundingClientRect().top - 200,
-              left: opponentAreaRef.current.getBoundingClientRect().left + opponentAreaRef.current.getBoundingClientRect().width / 2 - 64
-            };
-            
+          if (cardElement) {  
             // Calculate end position (center of opponent area)
             const opponentAreaRect = opponentAreaRef.current.getBoundingClientRect();
             const endPosition = {

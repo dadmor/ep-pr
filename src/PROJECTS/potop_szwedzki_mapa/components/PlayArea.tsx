@@ -1,5 +1,5 @@
 // components/PlayArea.tsx
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import clsx from 'clsx';
 import { Card as CardType } from '../types';
 import Card from './Card';

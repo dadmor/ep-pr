@@ -382,7 +382,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       const damageDealt = calculateDamage(attacker, target);
       const newTarget = { ...target, hp: target.hp - damageDealt };
-      const newAttacker = { ...attacker, hasAttacked: true };
+
 
       get().addMessage(
         `${attacker.name} attacked ${target.name} for ${damageDealt} damage.`
@@ -461,7 +461,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       const damageDealt = calculateDamage(attacker, target);
       const newTarget = { ...target, hp: target.hp - damageDealt };
-      const newAttacker = { ...attacker, hasAttacked: true };
+    
 
       get().addMessage(
         `Opponent's ${attacker.name} attacked ${target.name} for ${damageDealt} damage.`
@@ -574,147 +574,3 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 }));
-
-// --- Opponent AI Logic ---
-// Note: Most of this is now handled in the App component with animations
-// This is kept for reference or fallback purposes
-
-const findBestTarget = (targets: Card[]): number => {
-  return targets.reduce(
-    (minIndex, card, index, array) =>
-      card.hp < array[minIndex].hp ? index : minIndex,
-    0
-  );
-};
-
-const playOpponentCard = (
-  gold: number,
-  deck: Card[],
-  playArea: Card[],
-  addMessage: (msg: string) => void
-): { gold: number; deck: Card[]; playArea: Card[] } => {
-  const affordableCards = deck
-    .filter((card) => card.cost <= gold)
-    .sort((a, b) => b.attack - a.attack);
-
-  if (affordableCards.length === 0 || playArea.length >= 5) {
-    return { gold, deck, playArea };
-  }
-
-  const cardToPlay = affordableCards[0];
-  addMessage(`Opponent played ${cardToPlay.name}.`);
-
-  return {
-    gold: gold - cardToPlay.cost,
-    deck: deck.filter((c) => c.id !== cardToPlay.id),
-    playArea: [...playArea, { ...cardToPlay, hasAttacked: false }],
-  };
-};
-
-const handleOpponentAttacks = (
-  opponentPlayArea: Card[],
-  playerPlayArea: Card[],
-  addMessage: (msg: string) => void
-): { opponentPlayArea: Card[]; playerPlayArea: Card[] } => {
-  if (playerPlayArea.length === 0) {
-    return { opponentPlayArea, playerPlayArea };
-  }
-
-  let updatedOpponentPlayArea = [...opponentPlayArea];
-  let updatedPlayerPlayArea = [...playerPlayArea];
-
-  for (const attacker of opponentPlayArea) {
-    if (attacker.hasAttacked || updatedPlayerPlayArea.length === 0) continue;
-
-    const targetIndex = findBestTarget(updatedPlayerPlayArea);
-    const target = updatedPlayerPlayArea[targetIndex];
-
-    const damageDealt = calculateDamage(attacker, target);
-    const newTargetHp = target.hp - damageDealt;
-
-    addMessage(
-      `Opponent's ${attacker.name} attacked Player's ${target.name} for ${damageDealt} damage.`
-    );
-
-    // Update attacker to mark as attacked
-    updatedOpponentPlayArea = updateCardInArray(
-      updatedOpponentPlayArea,
-      attacker.id,
-      { hasAttacked: true }
-    );
-
-    // Update or remove target based on HP
-    if (newTargetHp <= 0) {
-      addMessage(`Player's ${target.name} was defeated!`);
-      updatedPlayerPlayArea = updatedPlayerPlayArea.filter(
-        (card) => card.id !== target.id
-      );
-    } else {
-      updatedPlayerPlayArea = updateCardInArray(
-        updatedPlayerPlayArea,
-        target.id,
-        { hp: newTargetHp }
-      );
-    }
-  }
-
-  return {
-    opponentPlayArea: updatedOpponentPlayArea,
-    playerPlayArea: updatedPlayerPlayArea,
-  };
-};
-
-const opponentTurnLogic = (
-  state: GameState,
-  addMessage: (msg: string) => void
-): GameState => {
-  addMessage("Opponent's turn!");
-
-  // 1. Play a card if possible
-  const {
-    gold: newOpponentGold,
-    deck: newOpponentDeck,
-    playArea: newOpponentPlayAreaAfterPlay,
-  } = playOpponentCard(
-    state.opponent.gold,
-    state.opponent.deck,
-    state.opponent.playArea,
-    addMessage
-  );
-
-  // 2. Attack with available cards
-  const {
-    opponentPlayArea: finalOpponentPlayArea,
-    playerPlayArea: finalPlayerPlayArea,
-  } = handleOpponentAttacks(
-    newOpponentPlayAreaAfterPlay,
-    state.player.playArea,
-    addMessage
-  );
-
-  // Check win conditions
-  const gameStatus = checkWinConditions(
-    finalPlayerPlayArea,
-    finalOpponentPlayArea
-  );
-
-  // Return updated game state
-  return {
-    player: {
-      ...state.player,
-      playArea: finalPlayerPlayArea,
-    },
-    opponent: {
-      ...state.opponent,
-      gold: newOpponentGold,
-      deck: newOpponentDeck,
-      playArea: finalOpponentPlayArea,
-    },
-    turn: "player",
-    selectedAttackerId: null,
-    scenarios: state.scenarios,
-    currentScenarioIndex: state.currentScenarioIndex,
-    gameStatus,
-    messages: state.messages,
-  };
-};
