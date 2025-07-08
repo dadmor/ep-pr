@@ -367,7 +367,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 }));
 
 // --- Opponent AI Logic ---
-const opponentTurnLogic = (state: GameState, addMessage: (msg: string) => void): GameState => {
+const opponentTurnLogic = (state: GameState, addMessage: (msg: string) => void): Partial<GameState> => {
   addMessage("Opponent's turn!");
   
   let newOpponentGold = state.opponent.gold;
@@ -425,6 +425,8 @@ const opponentTurnLogic = (state: GameState, addMessage: (msg: string) => void):
   const gameStatus = checkWinConditionsHelper(newPlayerPlayArea, newOpponentPlayArea);
   
   // Po zakończeniu tury przeciwnika, przełącz na turę gracza
+  const turn: 'player' | 'opponent' = 'player';
+  
   return {
     ...state,
     player: {
@@ -437,7 +439,7 @@ const opponentTurnLogic = (state: GameState, addMessage: (msg: string) => void):
       deck: newOpponentDeck,
       playArea: newOpponentPlayArea
     },
-    turn: 'player',
+    turn, // Explicitly typed turn property
     gameStatus
   };
 };
