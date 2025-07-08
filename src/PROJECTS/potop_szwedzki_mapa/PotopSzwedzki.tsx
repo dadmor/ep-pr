@@ -1,19 +1,15 @@
 import React, { useEffect } from "react";
-import { useGameStore } from "./gameStore";
+import { useGameStore } from "./states/gameStore";
 import MapComponent from "./MapComponent";
-import HandComponent from "./HandComponent";
+import BattleComponent from "./BattleComponent";
 import EventLogComponent from "./EventLogComponent";
-import PlayerPanel from "./PlayerPanel";
-import EnemyPanel from "./EnemyPanel";
-import ActionsPanel from "./ActionsPanel";
+import HandActionsComponent from "./HandActionsComponent";
 import NotificationComponent from "./NotificationComponent";
-import HeaderComponent from "./HeaderComponent";
-import CardTooltip from "./CardTooltip"; // Import the new component
+import CardTooltip from "./CardTooltip";
 
 const PotopSzwedzki: React.FC = () => {
-  // Fixed state selectors to match the actual store structure
+  // State selectors
   const playerHp = useGameStore((state) => state.player.hp);
-  const enemy = useGameStore((state) => state.enemy);
   const gamePhase = useGameStore((state) => state.game.phase);
   const gameTurn = useGameStore((state) => state.game.turn);
   const initializeGame = useGameStore((state) => state.initializeGame);
@@ -25,7 +21,7 @@ const PotopSzwedzki: React.FC = () => {
   // Ekran przegranej
   if (gamePhase === "defeat" || playerHp <= 0) {
     return (
-      <div className="relative min-h-screen bg-gradient-to-br from-yellow-100 via-amber-50 to-orange-100 text-amber-900 flex flex-col items-center justify-center p-8 relative">
+      <div className="relative min-h-screen bg-gradient-to-br from-yellow-100 via-amber-50 to-orange-100 text-amber-900 flex flex-col items-center justify-center p-8">
         <MapComponent />
         <div className="bg-yellow-50/80 backdrop-blur-lg rounded-2xl p-8 text-center relative z-10 shadow-2xl border border-amber-400/50">
           <h1 className="text-6xl mb-4">💀 KLĘSKA</h1>
@@ -52,29 +48,25 @@ const PotopSzwedzki: React.FC = () => {
           "linear-gradient(135deg, #fefce8 0%, #fef3c7 25%, #fed7aa 50%, #fde68a 75%, #fbbf24 100%)",
       }}
     >
+      {/* Mapa jako tło */}
       <MapComponent />
+      
+      {/* Elementy UI */}
       <NotificationComponent />
-      <HeaderComponent />
-      <CardTooltip /> {/* Add the card tooltip modal component */}
-
-      <div className="flex-1 flex flex-col w-3/5 mx-auto p-2">
-        {/* Sekcja bitwy: Wróg vs Gracz */}
-        <div className="flex gap-4">
-          <EnemyPanel />
-          <div className="text-4xl font-bold text-amber-700">⚔️</div>
-          <PlayerPanel />
-        </div>
-
-        <div className="flex-1 z-20 flex ml-auto">
-          <EventLogComponent />
-        </div>
-
-        {/* Sekcja dolna: Deck z akcjami + Kronika */}
-        <div className="flex gap-4">
-          <HandComponent />
-          <ActionsPanel />
-        </div>
+      <CardTooltip />
+      
+      {/* Obszar bitwy na górze */}
+      <div className="w-96 mx-auto mt-4 z-20">
+        <BattleComponent />
       </div>
+      
+      {/* Kronika wydarzeń na boku */}
+      <div className="fixed right-4 top-20 z-20 w-64">
+        <EventLogComponent />
+      </div>
+      
+      {/* Ręka gracza i akcje na dole */}
+      <HandActionsComponent />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Card } from "./gameStore";
-import { GAME_SETTINGS } from "./gameConstants";
+import { GAME_SETTINGS } from "../gameConstants";
 
 export interface Notification {
   message: string;

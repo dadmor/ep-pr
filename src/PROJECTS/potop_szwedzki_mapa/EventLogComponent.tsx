@@ -1,47 +1,41 @@
-// === EventLogComponent.tsx ===
-import React from "react";
-import { useGameStore } from "./gameStore";  // Zmieniona ścieżka importu
+import React, { useRef, useEffect } from "react";
+import { useGameStore } from "./states/gameStore";
 
 const EventLogComponent: React.FC = () => {
   const eventLog = useGameStore((state) => state.game.eventLog);
-
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll to the latest log entry when log changes
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [eventLog]);
+  
   return (
-    <div className="max-w-64 w-64">
+    <div className="bg-yellow-50/70 backdrop-blur-lg rounded-xl p-2 shadow-lg/50 overflow-hidden">
+      <h3 className="text-amber-800 font-bold text-sm mb-1 flex items-center">
+        <span className="mr-1">📜</span> Kronika Wydarzeń
+      </h3>
       <div 
-        className="space-y-1 overflow-y-auto max-h-80"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
+        ref={logContainerRef}
+        className="h-64 overflow-y-auto pr-1 text-xs space-y-1 scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-amber-100"
       >
-        {eventLog.map((entry, idx) => (
-          <div
-            key={`${idx}-${entry}`}
-            className={`text-sm text-amber-800 p-2 rounded bg-yellow-100 flex items-center gap-2 border border-amber-200 transition-all duration-300 ${
-              idx === 0 ? 'animate-slideFromRight' : ''
+        {eventLog.map((event, index) => (
+          <div 
+            key={index} 
+            className={`p-1 rounded ${
+              index === 0 
+                ? "bg-amber-100/80 font-medium" 
+                : "hover:bg-amber-50/80"
             }`}
           >
-            <span className="flex-1">{entry}</span>
+            {event}
           </div>
         ))}
       </div>
-      
-      <style>{`
-        @keyframes slideFromRight {
-          0% {
-            transform: translateX(20px);
-          }
-          100% {
-            transform: translateX(0);
-          }
-        }
-        
-        .animate-slideFromRight {
-          animation: slideFromRight 0.4s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
 
-export default EventLogComponent;
+export default React.memo(EventLogComponent);

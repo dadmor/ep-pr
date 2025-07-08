@@ -1,4 +1,4 @@
-// === gameStore.ts ===
+// === optimized-gameStore.ts ===
 import { create } from "zustand";
 import { 
   GAME_SETTINGS, 
@@ -10,10 +10,11 @@ import {
   INITIAL_EVENT_LOG,
   SPELL_NAMES,
   CARD_KEYWORDS
-} from "./gameConstants";
+} from "../gameConstants";
 import { uiStore } from "./uiStore";
+import GameTimeline from "./timelineManager";
 
-// === TYPY ===
+// === TYPES ===
 export interface Card {
   id: number;
   name: string;
@@ -63,7 +64,7 @@ export interface Enemy {
   startsFirst: boolean;
 }
 
-// === STAN GRY ===
+// === GAME STATE ===
 export interface GameState {
   player: {
     hp: number;
@@ -90,7 +91,7 @@ export interface GameState {
   enemy: Enemy | null;
 }
 
-// === AKCJE ===
+// === ACTIONS ===
 export interface GameActions {
   initializeGame: () => void;
   endTurn: () => void;
@@ -105,7 +106,7 @@ export interface GameActions {
   canPlayCard: (card: Card) => boolean;
 }
 
-// === MECHANIKI ===
+// === MECHANICS ===
 export class GameMechanics {
   static initializeCardHP(card: Card): Card {
     if (card.type === "unit" || card.type === "hero" || card.type === "fortification") {
@@ -180,7 +181,7 @@ export class GameMechanics {
   }
 }
 
-// === SERWISY ===
+// === SERVICES ===
 export class CardService {
   private static nextId = 1000;
 
@@ -337,7 +338,7 @@ export class EnemyService {
     const aliveTargets = battlefield.filter(card => GameMechanics.isCardAlive(card));
     if (aliveTargets.length === 0) return null;
     
-    // Priorytet: bohaterowie > fortyfikacje > jednostki
+    // Priority: heroes > fortifications > units
     for (const type of ["hero", "fortification", "unit"]) {
       const targets = aliveTargets.filter(c => c.type === type);
       if (targets.length > 0) {
@@ -351,9 +352,9 @@ export class EnemyService {
   }
 }
 
-// === GŁÓWNY GAME STORE ===
+// === MAIN GAME STORE ===
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
-  // === STAN POCZĄTKOWY ===
+  // === INITIAL STATE ===
   player: {
     hp: GAME_SETTINGS.INITIAL_PLAYER_HP,
     maxHp: GAME_SETTINGS.INITIAL_PLAYER_HP,
@@ -378,10 +379,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   
   enemy: null,
 
-  // === AKCJE ===
+  // === ACTIONS ===
   
   initializeGame: () => {
-    // Utwórz talię gracza
+    // Clear any existing timeouts
+    GameTimeline.cancelAllActions();
+    
+    // Create player's deck
     const initialDeck: Card[] = [];
     (POLISH_CARDS_DATA as unknown as Card[]).forEach(card => {
       for (let i = 0; i < GAME_SETTINGS.CARDS_PER_DECK_TYPE; i++) {
@@ -393,7 +397,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const initialHand = shuffledDeck.slice(0, GAME_SETTINGS.INITIAL_HAND_SIZE);
     const remainingDeck = shuffledDeck.slice(GAME_SETTINGS.INITIAL_HAND_SIZE);
     
-    // Utwórz przeciwnika
+    // Create enemy
     const enemyTemplate = ENEMY_SCENARIOS[0] as unknown as EnemyTemplate;
     const enemy = EnemyService.createEnemy(enemyTemplate);
 
@@ -429,15 +433,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       enemy,
     });
 
-    // Ustawienie początkowej notyfikacji w UI store
+    // Set initial notification in UI store
     uiStore.getState().setNotification({ 
       message: enemy.startsFirst ? `🎮 Nowa gra! ${enemy.name} zaczyna!` : "🎮 Nowa gra rozpoczęta!", 
       type: "success"
     });
 
-    // Jeśli przeciwnik zaczyna pierwszy
+    // If enemy starts first, use the timeline manager to schedule it
     if (enemy.startsFirst) {
-      setTimeout(() => get().enemyTurn(), AI_SETTINGS.TURN_START_DELAY);
+      GameTimeline.scheduleEnemyTurn(() => get().enemyTurn());
     }
   },
 
@@ -456,13 +460,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const updates = CardService.playCard(state, card);
     set(state => ({ ...state, ...updates }));
 
-    // Efekty specjalne
+    // Special effects using the timeline manager
     if (card.name === SPELL_NAMES.POLISH.MOBILIZATION) {
-      setTimeout(() => get().drawCard(GAME_SETTINGS.MOBILIZATION_CARDS_DRAWN), AI_SETTINGS.TURN_START_DELAY);
+      GameTimeline.scheduleCardDraw(() => get().drawCard(GAME_SETTINGS.MOBILIZATION_CARDS_DRAWN));
     }
     
     if (card.keywords?.includes(CARD_KEYWORDS.SCOUT)) {
-      setTimeout(() => get().drawCard(1), AI_SETTINGS.TURN_START_DELAY);
+      GameTimeline.scheduleCardDraw(() => get().drawCard(1));
     }
   },
 
@@ -503,20 +507,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set(state => {
       const newState = { ...state };
       
-      // Oznacz atakującego jako użytego
+      // Mark attacker as used
       newState.cards.battlefield = newState.cards.battlefield.map(card => 
         card.instanceId === attacker.instanceId ? { ...card, used: true } : card
       );
 
       if (target === "enemy") {
-        // Atak na przeciwnika
+        // Attack on enemy
         newState.enemy!.currentHp = Math.max(0, newState.enemy!.currentHp - damage);
         newState.game.eventLog = [
           `⚔️ ${attacker.name} atakuje ${newState.enemy!.name} za ${damage} obrażeń!`,
           ...newState.game.eventLog.slice(0, GAME_SETTINGS.EVENT_LOG_MAX_SIZE - 1)
         ];
       } else {
-        // Atak na kartę
+        // Attack on card
         const targetCurrentHP = target.currentHP || target.defense;
         const newHP = Math.max(0, targetCurrentHP - damage);
         
@@ -540,13 +544,13 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         }
       }
 
-      // Zresetuj fazę gry
+      // Reset game phase
       newState.game.phase = "main";
 
       return newState;
     });
 
-    // Resetuj UI
+    // Reset UI
     uiStore.getState().setPendingAction(null);
     uiStore.getState().setSelectedCard(null);
   },
@@ -557,7 +561,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       game: { ...state.game, phase: "main" }
     }));
     
-    // Resetuj UI
+    // Reset UI
     uiStore.getState().setPendingAction(null);
     uiStore.getState().setSelectedCard(null);
   },
@@ -565,7 +569,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   endTurn: () => {
     const state = get();
     
-    // Sprawdź warunki wygranej/przegranej
+    // Check victory/defeat conditions
     if (state.enemy && state.enemy.currentHp <= 0) {
       get().handleVictory();
       return;
@@ -576,7 +580,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return;
     }
     
-    // Zresetuj pole bitwy gracza
+    // Reset player's battlefield
     set(state => ({
       ...state,
       cards: {
@@ -593,14 +597,15 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       game: { ...state.game, turn: state.game.turn + 1 }
     }));
 
-    // Rozpocznij turę przeciwnika
-    setTimeout(() => get().enemyTurn(), AI_SETTINGS.CARD_PLAY_DELAY);
-    
-    // Dobierz kartę
-    setTimeout(() => get().drawCard(1), AI_SETTINGS.CARD_PLAY_DELAY * 2);
+    // Schedule enemy turn and card draw with timeline manager
+    GameTimeline.scheduleEnemyTurn(() => get().enemyTurn());
+    GameTimeline.scheduleCardDraw(() => get().drawCard(1));
   },
 
   enemyTurn: () => {
+    // Cancel any pending actions when enemy turn starts
+    GameTimeline.cancelAllActions();
+    
     set(state => ({
       ...state,
       game: { ...state.game, phase: "enemyTurn" },
@@ -615,11 +620,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       } : null
     }));
 
-    setTimeout(() => {
+    // Execute enemy turn logic
+    GameTimeline.scheduleEnemyTurn(() => {
       const state = get();
       if (!state.enemy) return;
 
-      // Dobierz kartę
+      // Draw card
       if (state.enemy.hand.length < GAME_SETTINGS.MAX_HAND_SIZE && state.enemy.deck.length > 0) {
         const card = state.enemy.deck[0];
         set(state => ({
@@ -639,20 +645,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         }));
       }
 
-      // Zagraj karty
+      // Play cards
       const maxCards = Math.floor(Math.random() * AI_SETTINGS.MAX_CARDS_PER_TURN) + 1;
       let cardsPlayed = 0;
       
-      const playCard = () => {
+      const playNextCard = () => {
         const currentState = get();
         if (!currentState.enemy || cardsPlayed >= maxCards) {
-          attackPhase();
+          startAttackPhase();
           return;
         }
 
         const cardToPlay = EnemyService.chooseCardToPlay(currentState.enemy);
         if (!cardToPlay) {
-          attackPhase();
+          startAttackPhase();
           return;
         }
 
@@ -685,10 +691,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         });
 
         cardsPlayed++;
-        setTimeout(playCard, AI_SETTINGS.CARD_PLAY_DELAY);
+        GameTimeline.scheduleCardPlay(playNextCard);
       };
 
-      const attackPhase = () => {
+      const startAttackPhase = () => {
         const currentState = get();
         if (!currentState.enemy) return;
 
@@ -697,9 +703,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         );
 
         let attackIndex = 0;
-        const executeAttack = () => {
+        
+        const executeNextAttack = () => {
           if (attackIndex >= attackers.length) {
-            // Koniec tury przeciwnika
+            // End enemy turn
             set(state => ({ ...state, game: { ...state.game, phase: "main" } }));
             return;
           }
@@ -709,7 +716,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           const target = EnemyService.chooseAttackTarget(currentState.cards.battlefield);
 
           if (target) {
-            // Atak na kartę gracza
+            // Attack on player's card
             const damage = GameMechanics.calculateCardAttack(attacker, currentState.enemy!.battlefield);
             const targetCurrentHP = target.currentHP || target.defense;
             const newHP = Math.max(0, targetCurrentHP - damage);
@@ -755,7 +762,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
               }
             });
           } else {
-            // Atak na gracza
+            // Attack on player
             const damage = GameMechanics.calculateCardAttack(attacker, currentState.enemy!.battlefield);
             set(state => ({
               ...state,
@@ -770,7 +777,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
             }));
           }
 
-          // Oznacz atakującego jako użytego
+          // Mark attacker as used
           set(state => ({
             ...state,
             enemy: {
@@ -782,18 +789,19 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
           }));
 
           attackIndex++;
-          setTimeout(executeAttack, AI_SETTINGS.ATTACK_DELAY);
+          GameTimeline.scheduleAttack(executeNextAttack);
         };
 
         if (attackers.length > 0) {
-          executeAttack();
+          executeNextAttack();
         } else {
           set(state => ({ ...state, game: { ...state.game, phase: "main" } }));
         }
       };
 
-      setTimeout(playCard, AI_SETTINGS.CARD_PLAY_DELAY);
-    }, AI_SETTINGS.TURN_START_DELAY);
+      // Start the chain of actions
+      GameTimeline.scheduleCardPlay(playNextCard);
+    });
   },
 
   handleVictory: () => {
@@ -819,8 +827,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
     }));
 
-    // Przygotuj następnego przeciwnika
-    setTimeout(() => {
+    // Prepare next enemy
+    GameTimeline.scheduleVictory(() => {
       const currentState = get();
       const currentEnemyId = currentState.enemy?.id || 1;
       const nextEnemyIndex = ENEMY_SCENARIOS.findIndex(e => e.id === currentEnemyId + 1);
@@ -831,7 +839,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       
       const nextEnemy = EnemyService.createEnemy(nextEnemyTemplate);
       
-      // Dobierz nagrody
+      // Draw rewards
       get().drawCard(rewards.cards);
       
       set(state => ({
@@ -851,19 +859,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         player: { ...state.player, energy: state.player.maxEnergy }
       }));
 
-      // Jeśli nowy przeciwnik zaczyna pierwszy
+      // If new enemy starts first
       if (nextEnemy.startsFirst) {
-        setTimeout(() => get().enemyTurn(), AI_SETTINGS.TURN_START_DELAY);
+        GameTimeline.scheduleEnemyTurn(() => get().enemyTurn());
       }
-    }, AI_SETTINGS.TURN_START_DELAY);
+    });
   },
 
   handleDefeat: () => {
+    // Cancel all pending actions on defeat
+    GameTimeline.cancelAllActions();
+    
     set(state => ({
       ...state,
       game: { ...state.game, phase: "defeat" }
     }));
   }
 }));
-
-
