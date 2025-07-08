@@ -1,13 +1,29 @@
 // App.tsx
-import React, { useEffect } from 'react';
-import { useGameStore } from './store/gameStore';
-import Hand from './components/Hand';
-import PlayArea from './components/PlayArea';
-import GameInfo from './components/GameInfo';
-import ActionButton from './components/ActionButton';
+import React, { useEffect } from "react";
+import { useGameStore } from "./store/gameStore";
+import Hand from "./components/Hand";
+import PlayArea from "./components/PlayArea";
+import GameInfo from "./components/GameInfo";
+import ActionButton from "./components/ActionButton";
+
+// Helper function to determine if an action is disabled
+const isDrawDisabled = (
+  turn: "player" | "opponent",
+  playerGold: number,
+  handSize: number,
+  deckSize: number,
+  gameStatus: string
+) =>
+  turn !== "player" ||
+  playerGold < 1 ||
+  handSize >= 5 ||
+  deckSize === 0 ||
+  gameStatus !== "playing";
+
+const isEndTurnDisabled = (turn: "player" | "opponent", gameStatus: string) =>
+  turn !== "player" || gameStatus !== "playing";
 
 const App: React.FC = () => {
-  // Select specific parts of the state and actions you need
   const {
     player,
     opponent,
@@ -28,22 +44,22 @@ const App: React.FC = () => {
   // Effect to load the initial scenario on component mount
   useEffect(() => {
     loadScenario(0);
-  }, [loadScenario]); // Dependency array includes loadScenario to avoid lint warnings
+  }, [loadScenario]);
 
   const handleCardInHandClick = (cardId: string) => {
-    if (turn === 'player' && gameStatus === 'playing') {
+    if (turn === "player" && gameStatus === "playing") {
       playCard(cardId);
     }
   };
 
   const handlePlayerCardInPlayAreaClick = (cardId: string) => {
-    if (turn === 'player' && gameStatus === 'playing') {
-      selectAttacker(selectedAttackerId === cardId ? null : cardId); // Toggle selection
+    if (turn === "player" && gameStatus === "playing") {
+      selectAttacker(selectedAttackerId === cardId ? null : cardId);
     }
   };
 
   const handleOpponentCardInPlayAreaClick = (cardId: string) => {
-    if (turn === 'player' && gameStatus === 'playing' && selectedAttackerId) {
+    if (turn === "player" && gameStatus === "playing" && selectedAttackerId) {
       attackCard(selectedAttackerId, cardId);
     }
   };
@@ -56,14 +72,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-between p-4">
-     
-
       <div className="flex w-full max-w-7xl justify-between items-start flex-grow">
         {/* Game Info Column */}
-        <GameInfo
-          onNextScenario={handleNextScenario}
-          onResetGame={resetGame}
-        />
+        <GameInfo onNextScenario={handleNextScenario} onResetGame={resetGame} />
 
         {/* Game Board Column */}
         <div className="flex flex-col flex-grow mx-4 items-center">
@@ -73,20 +84,30 @@ const App: React.FC = () => {
             isOpponent={true}
             onCardClick={handleOpponentCardInPlayAreaClick}
             selectedAttackerId={null}
-            canTarget={selectedAttackerId !== null && turn === 'player' && gameStatus === 'playing'}
+            canTarget={
+              selectedAttackerId !== null &&
+              turn === "player" &&
+              gameStatus === "playing"
+            }
           />
 
           {/* Action Buttons */}
           <div className="my-6 flex space-x-4">
             <ActionButton
               onClick={drawCard}
-              disabled={turn !== 'player' || player.gold < 1 || player.hand.length >= 5 || player.deck.length === 0 || gameStatus !== 'playing'}
+              disabled={isDrawDisabled(
+                turn,
+                player.gold,
+                player.hand.length,
+                player.deck.length,
+                gameStatus
+              )}
             >
               Draw Card (1 Gold)
             </ActionButton>
             <ActionButton
               onClick={endTurn}
-              disabled={turn !== 'player' || gameStatus !== 'playing'}
+              disabled={isEndTurnDisabled(turn, gameStatus)}
             >
               End Turn
             </ActionButton>
@@ -104,12 +125,12 @@ const App: React.FC = () => {
 
         {/* Player Hand (Right Column) */}
         <div className="w-96 flex flex-col items-center">
-            <h2 className="text-xl font-bold mb-2">Your Hand</h2>
-            <Hand
-              hand={player.hand}
-              onCardClick={handleCardInHandClick}
-              gold={player.gold}
-            />
+          <h2 className="text-xl font-bold mb-2">Your Hand</h2>
+          <Hand
+            hand={player.hand}
+            onCardClick={handleCardInHandClick}
+            gold={player.gold}
+          />
         </div>
       </div>
     </div>
