@@ -1,74 +1,127 @@
-import React, { useEffect } from "react";
-import { useGameStore } from "./states/gameStore";
-import MapComponent from "./MapComponent";
-import BattleComponent from "./BattleComponent";
-import EventLogComponent from "./EventLogComponent";
-import HandActionsComponent from "./HandActionsComponent";
-import NotificationComponent from "./NotificationComponent";
-import CardTooltip from "./CardTooltip";
+// App.tsx
+import React, { useEffect } from 'react';
+import { useGameStore } from './store/gameStore'; // Import the Zustand store
+import Hand from './components/Hand';
+import PlayArea from './components/PlayArea';
+import GameInfo from './components/GameInfo';
+import ActionButton from './components/ActionButton';
 
-const PotopSzwedzki: React.FC = () => {
-  // State selectors
-  const playerHp = useGameStore((state) => state.player.hp);
-  const gamePhase = useGameStore((state) => state.game.phase);
-  const gameTurn = useGameStore((state) => state.game.turn);
-  const initializeGame = useGameStore((state) => state.initializeGame);
+const App: React.FC = () => {
+  // Select specific parts of the state and actions you need
+  const {
+    player,
+    opponent,
+    turn,
+    selectedAttackerId,
+    gameStatus,
+    currentScenarioIndex,
+    scenarios,
+    drawCard,
+    playCard,
+    selectAttacker,
+    attackCard,
+    endTurn,
+    loadScenario,
+    resetGame,
+    checkWinConditions, // Access the helper action
+  } = useGameStore();
 
+  // Effect to load the initial scenario on component mount
   useEffect(() => {
-    initializeGame();
-  }, [initializeGame]);
+    loadScenario(0);
+  }, [loadScenario]); // Dependency array includes loadScenario to avoid lint warnings
 
-  // Ekran przegranej
-  if (gamePhase === "defeat" || playerHp <= 0) {
-    return (
-      <div className="relative min-h-screen bg-gradient-to-br from-yellow-100 via-amber-50 to-orange-100 text-amber-900 flex flex-col items-center justify-center p-8">
-        <MapComponent />
-        <div className="bg-yellow-50/80 backdrop-blur-lg rounded-2xl p-8 text-center relative z-10 shadow-2xl border border-amber-400/50">
-          <h1 className="text-6xl mb-4">💀 KLĘSKA</h1>
-          <p className="text-xl mb-4">
-            Polska padła pod naporem szwedzkiej potęgi...
-          </p>
-          <p className="text-lg mb-6">Przetrwałeś {gameTurn} tur</p>
-          <button
-            onClick={initializeGame}
-            className="bg-amber-300 hover:bg-amber-400 px-6 py-3 rounded-lg font-bold transition-colors text-amber-900 shadow-md"
-          >
-            🔄 Spróbuj ponownie
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Listen to changes in play areas to check win conditions
+  useEffect(() => {
+    checkWinConditions();
+  }, [player.playArea.length, opponent.playArea.length, checkWinConditions]);
+
+
+  const handleCardInHandClick = (cardId: string) => {
+    if (turn === 'player' && gameStatus === 'playing') {
+      playCard(cardId);
+    }
+  };
+
+  const handlePlayerCardInPlayAreaClick = (cardId: string) => {
+    if (turn === 'player' && gameStatus === 'playing') {
+      selectAttacker(selectedAttackerId === cardId ? null : cardId); // Toggle selection
+    }
+  };
+
+  const handleOpponentCardInPlayAreaClick = (cardId: string) => {
+    if (turn === 'player' && gameStatus === 'playing' && selectedAttackerId) {
+      attackCard(selectedAttackerId, cardId);
+    }
+  };
+
+  const handleNextScenario = () => {
+    if (currentScenarioIndex < scenarios.length - 1) {
+      loadScenario(currentScenarioIndex + 1);
+    }
+  };
 
   return (
-    <div
-      className="min-h-screen flex flex-col text-amber-900 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #fefce8 0%, #fef3c7 25%, #fed7aa 50%, #fde68a 75%, #fbbf24 100%)",
-      }}
-    >
-      {/* Mapa jako tło */}
-      <MapComponent />
-      
-      {/* Elementy UI */}
-      <NotificationComponent />
-      <CardTooltip />
-      
-      {/* Obszar bitwy na górze */}
-      <div className="w-96 mx-auto mt-4 z-20">
-        <BattleComponent />
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-between p-4">
+      <h1 className="text-4xl font-extrabold text-teal-400 mb-6">Card Battle Game</h1>
+
+      <div className="flex w-full max-w-7xl justify-between items-start flex-grow">
+        {/* Game Info Column */}
+        <GameInfo
+          gameState={useGameStore.getState()} // Pass the entire state if GameInfo needs all of it
+          onNextScenario={handleNextScenario}
+          onResetGame={resetGame}
+        />
+
+        {/* Game Board Column */}
+        <div className="flex flex-col flex-grow mx-4 items-center">
+          {/* Opponent's Play Area */}
+          <PlayArea
+            cards={opponent.playArea}
+            isOpponent={true}
+            onCardClick={handleOpponentCardInPlayAreaClick}
+            selectedAttackerId={null}
+            canTarget={selectedAttackerId !== null && turn === 'player' && gameStatus === 'playing'}
+          />
+
+          {/* Action Buttons */}
+          <div className="my-6 flex space-x-4">
+            <ActionButton
+              onClick={drawCard}
+              disabled={turn !== 'player' || player.gold < 1 || player.hand.length >= 5 || player.deck.length === 0 || gameStatus !== 'playing'}
+            >
+              Draw Card (1 Gold)
+            </ActionButton>
+            <ActionButton
+              onClick={endTurn}
+              disabled={turn !== 'player' || gameStatus !== 'playing'}
+            >
+              End Turn
+            </ActionButton>
+          </div>
+
+          {/* Player's Play Area */}
+          <PlayArea
+            cards={player.playArea}
+            isOpponent={false}
+            onCardClick={handlePlayerCardInPlayAreaClick}
+            selectedAttackerId={selectedAttackerId}
+            canTarget={false}
+          />
+        </div>
+
+        {/* Player Hand (Right Column) */}
+        <div className="w-96 flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-2">Your Hand</h2>
+            <Hand
+              hand={player.hand}
+              onCardClick={handleCardInHandClick}
+              gold={player.gold}
+            />
+        </div>
       </div>
-      
-      {/* Kronika wydarzeń na boku */}
-      <div className="fixed right-4 top-20 z-20 w-64">
-        <EventLogComponent />
-      </div>
-      
-      {/* Ręka gracza i akcje na dole */}
-      <HandActionsComponent />
     </div>
   );
 };
 
-export default PotopSzwedzki;
+export default App;
