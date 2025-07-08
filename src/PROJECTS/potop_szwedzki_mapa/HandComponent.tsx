@@ -1,6 +1,6 @@
-// === HandComponent.tsx ===
+// === HandComponent.tsx (po aktualizacji) ===
 import React from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";
 import GameCard from "./GameCard";
 
 const HandComponent: React.FC = () => {

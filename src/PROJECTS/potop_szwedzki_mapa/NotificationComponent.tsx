@@ -1,9 +1,9 @@
-// === NotificationComponent.tsx ===
+// === NotificationComponent.tsx (po aktualizacji) ===
 import React from "react";
-import { useGameStore, Notification } from "./store";
+import { uiStore, Notification } from "./uiStore";
 
 const NotificationComponent: React.FC = () => {
-  const notification = useGameStore((state) => state.ui.notification);
+  const notification = uiStore((state) => state.notification);
 
   if (!notification) return null;
 

@@ -1,3 +1,4 @@
+// === gameStore.ts ===
 import { create } from "zustand";
 import { 
   GAME_SETTINGS, 
@@ -10,6 +11,7 @@ import {
   SPELL_NAMES,
   CARD_KEYWORDS
 } from "./gameConstants";
+import { uiStore } from "./uiStore";
 
 // === TYPY ===
 export interface Card {
@@ -61,18 +63,6 @@ export interface Enemy {
   startsFirst: boolean;
 }
 
-export interface Notification {
-  message: string;
-  type: "info" | "success" | "warning" | "error";
-}
-
-export interface PendingAction {
-  type: "selectAttackTarget" | "selectSpellTarget";
-  attacker?: Card;
-  possibleTargets: Card[];
-  damage?: number;
-}
-
 // === STAN GRY ===
 export interface GameState {
   player: {
@@ -98,12 +88,6 @@ export interface GameState {
   };
   
   enemy: Enemy | null;
-  
-  ui: {
-    notification: Notification | null;
-    pendingAction: PendingAction | null;
-    selectedCard: Card | null;
-  };
 }
 
 // === AKCJE ===
@@ -118,12 +102,11 @@ export interface GameActions {
   enemyTurn: () => void;
   handleVictory: () => void;
   handleDefeat: () => void;
-  setNotification: (notification: Notification | null) => void;
   canPlayCard: (card: Card) => boolean;
 }
 
-// === MECHANIKI (niezmienione z oryginału) ===
-class GameMechanics {
+// === MECHANIKI ===
+export class GameMechanics {
   static initializeCardHP(card: Card): Card {
     if (card.type === "unit" || card.type === "hero" || card.type === "fortification") {
       return {
@@ -198,7 +181,7 @@ class GameMechanics {
 }
 
 // === SERWISY ===
-class CardService {
+export class CardService {
   private static nextId = 1000;
 
   static createCardInstance(card: Card): Card {
@@ -291,7 +274,7 @@ class CardService {
   }
 }
 
-class EnemyService {
+export class EnemyService {
   static createEnemy(template: EnemyTemplate): Enemy {
     const deck: Card[] = [];
     
@@ -368,7 +351,7 @@ class EnemyService {
   }
 }
 
-// === GŁÓWNY STORE ===
+// === GŁÓWNY GAME STORE ===
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
   // === STAN POCZĄTKOWY ===
   player: {
@@ -394,12 +377,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   },
   
   enemy: null,
-  
-  ui: {
-    notification: null,
-    pendingAction: null,
-    selectedCard: null,
-  },
 
   // === AKCJE ===
   
@@ -450,15 +427,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       },
       
       enemy,
-      
-      ui: {
-        notification: { 
-          message: enemy.startsFirst ? `🎮 Nowa gra! ${enemy.name} zaczyna!` : "🎮 Nowa gra rozpoczęta!", 
-          type: "success"
-        },
-        pendingAction: null,
-        selectedCard: null,
-      }
+    });
+
+    // Ustawienie początkowej notyfikacji w UI store
+    uiStore.getState().setNotification({ 
+      message: enemy.startsFirst ? `🎮 Nowa gra! ${enemy.name} zaczyna!` : "🎮 Nowa gra rozpoczęta!", 
+      type: "success"
     });
 
     // Jeśli przeciwnik zaczyna pierwszy
@@ -475,7 +449,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
   playCard: (card: Card) => {
     const state = get();
     if (!get().canPlayCard(card)) {
-      get().setNotification({ message: "❌ Nie można zagrać tej karty!", type: "error" });
+      uiStore.getState().setNotification({ message: "❌ Nie można zagrać tej karty!", type: "error" });
       return;
     }
 
@@ -506,23 +480,23 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     set(state => ({
       ...state,
-      game: { ...state.game, phase: "selectTarget" },
-      ui: {
-        ...state.ui,
-        pendingAction: {
-          type: "selectAttackTarget",
-          attacker,
-          possibleTargets,
-          damage: GameMechanics.calculateCardAttack(attacker, state.cards.battlefield)
-        },
-        selectedCard: attacker
-      }
+      game: { ...state.game, phase: "selectTarget" }
     }));
+
+    uiStore.getState().setPendingAction({
+      type: "selectAttackTarget",
+      attacker,
+      possibleTargets,
+      damage: GameMechanics.calculateCardAttack(attacker, state.cards.battlefield)
+    });
+    
+    uiStore.getState().setSelectedCard(attacker);
   },
 
   executeAttack: (attacker: Card, target: Card | "enemy") => {
     const state = get();
-    if (!state.ui.pendingAction || !state.enemy) return;
+    const pendingAction = uiStore.getState().pendingAction;
+    if (!pendingAction || !state.enemy) return;
 
     const damage = GameMechanics.calculateCardAttack(attacker, state.cards.battlefield);
 
@@ -566,21 +540,26 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         }
       }
 
-      // Resetuj UI
-      newState.ui.pendingAction = null;
-      newState.ui.selectedCard = null;
+      // Zresetuj fazę gry
       newState.game.phase = "main";
 
       return newState;
     });
+
+    // Resetuj UI
+    uiStore.getState().setPendingAction(null);
+    uiStore.getState().setSelectedCard(null);
   },
 
   cancelTargetSelection: () => {
     set(state => ({
       ...state,
-      ui: { ...state.ui, pendingAction: null, selectedCard: null },
       game: { ...state.game, phase: "main" }
     }));
+    
+    // Resetuj UI
+    uiStore.getState().setPendingAction(null);
+    uiStore.getState().setSelectedCard(null);
   },
 
   endTurn: () => {
@@ -824,7 +803,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     set(state => ({
       ...state,
-      game: {  // Tylko jedno użycie właściwości 'game'
+      game: {
         ...state.game,
         phase: "victory",
         eventLog: [
@@ -884,15 +863,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       ...state,
       game: { ...state.game, phase: "defeat" }
     }));
-  },
-
-  setNotification: (notification: Notification | null) => {
-    set(state => ({ ...state, ui: { ...state.ui, notification } }));
-
-    if (notification) {
-      setTimeout(() => {
-        set(state => ({ ...state, ui: { ...state.ui, notification: null } }));
-      }, GAME_SETTINGS.NOTIFICATION_TIMEOUT);
-    }
   }
 }));
+
+

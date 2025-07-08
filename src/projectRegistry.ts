@@ -2,12 +2,7 @@
 import { lazy } from 'react';
 
 export const projectRegistry = [
-  {
-    id: 'potop_mapa',
-    name: 'Potop Mapa',
-    path: '/potop-mapa',
-    component: lazy(() => import('./PROJECTS/potop_szwedzki_mapa/map_old')),
-  },
+
   {
     id: 'potop_gra',
     name: 'Potop Gra',

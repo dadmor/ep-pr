@@ -1,6 +1,6 @@
 // === EventLogComponent.tsx ===
 import React from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";  // Zmieniona ścieżka importu
 
 const EventLogComponent: React.FC = () => {
   const eventLog = useGameStore((state) => state.game.eventLog);

@@ -1,5 +1,5 @@
 import React from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";  // Zmieniona ścieżka importu
 
 const HeaderComponent: React.FC = () => {
   const turn = useGameStore((state) => state.game.turn);

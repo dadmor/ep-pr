@@ -1,13 +1,17 @@
-// === EnemyPanel.tsx ===
+// === EnemyPanel.tsx (po aktualizacji) ===
 import React from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";
+import { uiStore } from "./uiStore";
 import GameCard from "./GameCard";
+
 
 const EnemyPanel: React.FC = () => {
   const enemy = useGameStore((state) => state.enemy);
   const gamePhase = useGameStore((state) => state.game.phase);
-  const pendingAction = useGameStore((state) => state.ui.pendingAction);
   const executeAttack = useGameStore((state) => state.executeAttack);
+  
+  // Pobranie stanu z uiStore
+  const pendingAction = uiStore((state) => state.pendingAction);
 
   if (!enemy) return null;
 

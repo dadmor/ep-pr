@@ -1,7 +1,7 @@
-
-// === ActionsPanel.tsx ===
+// === ActionsPanel.tsx (po aktualizacji) ===
 import React from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";
+import { uiStore } from "./uiStore";
 import { Sword, Shield, Clock, Play } from "lucide-react";
 
 const ActionsPanel: React.FC = () => {
@@ -13,7 +13,9 @@ const ActionsPanel: React.FC = () => {
   const enemy = useGameStore((state) => state.enemy);
   const endTurn = useGameStore((state) => state.endTurn);
   const cancelTargetSelection = useGameStore((state) => state.cancelTargetSelection);
-  const pendingAction = useGameStore((state) => state.ui.pendingAction);
+  
+  // Pobranie stanu z uiStore
+  const pendingAction = uiStore((state) => state.pendingAction);
 
   const canEndTurn = gamePhase === "main";
   const hasAttackingUnits = battlefield.some(card => 

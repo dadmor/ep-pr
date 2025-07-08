@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";
 import MapComponent from "./MapComponent";
 import HandComponent from "./HandComponent";
 import EventLogComponent from "./EventLogComponent";

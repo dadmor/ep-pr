@@ -1,6 +1,8 @@
+// === GameCard.tsx (po aktualizacji) ===
 import React, { useState } from "react";
 import { Sword, Shield, Heart, Plus, Target, Info } from "lucide-react";
-import { useGameStore, Card } from "./store";
+import { Card } from "./gameStore";
+import { useGameStore } from "./gameStore";
 
 interface GameCardProps {
   card: Card;

@@ -1,15 +1,18 @@
-// === PlayerPanel.tsx ===
+// === PlayerPanel.tsx (po aktualizacji) ===
 import React from "react";
-import { useGameStore } from "./store";
+import { useGameStore } from "./gameStore";
+import { uiStore } from "./uiStore";
 import GameCard from "./GameCard";
 
 const PlayerPanel: React.FC = () => {
   const battlefield = useGameStore((state) => state.cards.battlefield);
   const playerHp = useGameStore((state) => state.player.hp);
   const gamePhase = useGameStore((state) => state.game.phase);
-  const selectedCard = useGameStore((state) => state.ui.selectedCard);
   const selectAttackTarget = useGameStore((state) => state.selectAttackTarget);
   const cancelTargetSelection = useGameStore((state) => state.cancelTargetSelection);
+  
+  // Pobranie stanu z uiStore
+  const selectedCard = uiStore((state) => state.selectedCard);
 
   const handleCardClick = (card: any) => {
     if (gamePhase === "main" && card.canAttack && !card.used && card.attack > 0 && (card.currentHP || card.defense) > 0) {
