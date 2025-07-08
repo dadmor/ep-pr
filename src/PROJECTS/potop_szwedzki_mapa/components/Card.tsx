@@ -1,5 +1,6 @@
 // components/Card.tsx
 import React from 'react';
+import clsx from 'clsx'; // Zainstaluj tę bibliotekę: npm install clsx
 import { Card as CardType } from '../types';
 
 interface CardProps {
@@ -11,23 +12,33 @@ interface CardProps {
   className?: string;
 }
 
-const Card: React.FC<CardProps> = ({ card, onClick, isClickable = false, isSelected = false, isPlayable = false, className = '' }) => {
+const Card: React.FC<CardProps> = ({ 
+  card, 
+  onClick, 
+  isClickable = false, 
+  isSelected = false, 
+  isPlayable = false, 
+  className = '' 
+}) => {
   const handleClick = () => {
     if (isClickable && onClick) {
       onClick(card.id);
     }
   };
 
-  const cardClasses = `
-    relative w-32 h-48 bg-gray-800 rounded-lg shadow-lg text-white font-bold
-    flex flex-col justify-between items-center p-2 m-2
-    border-2
-    ${isClickable && 'cursor-pointer hover:scale-105 transition-transform'}
-    ${isSelected ? 'border-blue-500 ring-4 ring-blue-500' : 'border-gray-700'}
-    ${isPlayable ? 'border-green-500 ring-2 ring-green-500' : ''}
-    ${card.hasAttacked ? 'opacity-70 grayscale' : ''}
-    ${className}
-  `;
+  // Uporządkowanie klas CSS za pomocą clsx
+  const cardClasses = clsx(
+    'relative w-32 h-48 bg-gray-800 rounded-lg shadow-lg text-white font-bold',
+    'flex flex-col justify-between items-center p-2 m-2 border-2',
+    {
+      'cursor-pointer hover:scale-105 transition-transform': isClickable,
+      'border-blue-500 ring-4 ring-blue-500': isSelected,
+      'border-green-500 ring-2 ring-green-500': isPlayable,
+      'opacity-70 grayscale': card.hasAttacked,
+      'border-gray-700': !isSelected && !isPlayable
+    },
+    className
+  );
 
   return (
     <div className={cardClasses} onClick={handleClick}>
@@ -44,4 +55,5 @@ const Card: React.FC<CardProps> = ({ card, onClick, isClickable = false, isSelec
   );
 };
 
-export default Card;
+// Optymalizacja renderowania komponentu za pomocą React.memo
+export default React.memo(Card);

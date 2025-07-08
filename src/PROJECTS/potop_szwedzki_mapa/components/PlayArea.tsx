@@ -1,5 +1,6 @@
 // components/PlayArea.tsx
 import React from 'react';
+import clsx from 'clsx';
 import { Card as CardType } from '../types';
 import Card from './Card';
 
@@ -12,10 +13,13 @@ interface PlayAreaProps {
 }
 
 const PlayArea: React.FC<PlayAreaProps> = ({ cards, isOpponent, onCardClick, selectedAttackerId, canTarget }) => {
-  const playAreaClasses = `
-    w-full flex justify-center items-center p-4 min-h-[200px]
-    ${isOpponent ? 'bg-red-800 bg-opacity-30 rounded-b-lg' : 'bg-blue-800 bg-opacity-30 rounded-t-lg'}
-  `;
+  const playAreaClasses = clsx(
+    'w-full flex justify-center items-center p-4 min-h-[200px]',
+    {
+      'bg-red-800 bg-opacity-30 rounded-b-lg': isOpponent,
+      'bg-blue-800 bg-opacity-30 rounded-t-lg': !isOpponent
+    }
+  );
 
   return (
     <div className={playAreaClasses}>
@@ -39,4 +43,4 @@ const PlayArea: React.FC<PlayAreaProps> = ({ cards, isOpponent, onCardClick, sel
   );
 };
 
-export default PlayArea;
+export default React.memo(PlayArea);

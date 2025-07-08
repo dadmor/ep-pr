@@ -29,4 +29,4 @@ const Hand: React.FC<HandProps> = ({ hand, onCardClick, gold }) => {
   );
 };
 
-export default Hand;
+export default React.memo(Hand);

@@ -1,6 +1,6 @@
 // App.tsx
 import React, { useEffect } from 'react';
-import { useGameStore } from './store/gameStore'; // Import the Zustand store
+import { useGameStore } from './store/gameStore';
 import Hand from './components/Hand';
 import PlayArea from './components/PlayArea';
 import GameInfo from './components/GameInfo';
@@ -23,19 +23,12 @@ const App: React.FC = () => {
     endTurn,
     loadScenario,
     resetGame,
-    checkWinConditions, // Access the helper action
   } = useGameStore();
 
   // Effect to load the initial scenario on component mount
   useEffect(() => {
     loadScenario(0);
   }, [loadScenario]); // Dependency array includes loadScenario to avoid lint warnings
-
-  // Listen to changes in play areas to check win conditions
-  useEffect(() => {
-    checkWinConditions();
-  }, [player.playArea.length, opponent.playArea.length, checkWinConditions]);
-
 
   const handleCardInHandClick = (cardId: string) => {
     if (turn === 'player' && gameStatus === 'playing') {
@@ -63,12 +56,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-between p-4">
-      <h1 className="text-4xl font-extrabold text-teal-400 mb-6">Card Battle Game</h1>
+     
 
       <div className="flex w-full max-w-7xl justify-between items-start flex-grow">
         {/* Game Info Column */}
         <GameInfo
-          gameState={useGameStore.getState()} // Pass the entire state if GameInfo needs all of it
           onNextScenario={handleNextScenario}
           onResetGame={resetGame}
         />

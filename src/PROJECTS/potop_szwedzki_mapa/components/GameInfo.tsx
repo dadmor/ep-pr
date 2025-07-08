@@ -1,10 +1,8 @@
 // components/GameInfo.tsx
 import React from 'react';
-import { GameState } from '../types';
-import { useGameStore } from '../store/gameStore'; // Import the store
+import { useGameStore } from '../store/gameStore';
 
 interface GameInfoProps {
-  // gameState: GameState; // No longer needed as a prop if we directly access the store
   onNextScenario: () => void;
   onResetGame: () => void;
 }

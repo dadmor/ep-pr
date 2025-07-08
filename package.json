@@ -12,6 +12,7 @@
     "lint": "eslint src --ext ts,tsx"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "honeycomb-grid": "^4.1.5",
     "lucide-react": "^0.487.0",
     "react": "^18.2.0",
