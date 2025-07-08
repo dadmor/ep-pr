@@ -8,6 +8,7 @@ import EnemyPanel from "./EnemyPanel";
 import ActionsPanel from "./ActionsPanel";
 import NotificationComponent from "./NotificationComponent";
 import HeaderComponent from "./HeaderComponent";
+import CardTooltip from "./CardTooltip"; // Import the new component
 
 const PotopSzwedzki: React.FC = () => {
   // Fixed state selectors to match the actual store structure
@@ -20,9 +21,6 @@ const PotopSzwedzki: React.FC = () => {
   useEffect(() => {
     initializeGame();
   }, [initializeGame]);
-
-  // No need for the victory effect as the store already handles it
-  // in the executeAttack and enemyTurn functions
 
   // Ekran przegranej
   if (gamePhase === "defeat" || playerHp <= 0) {
@@ -57,6 +55,7 @@ const PotopSzwedzki: React.FC = () => {
       <MapComponent />
       <NotificationComponent />
       <HeaderComponent />
+      <CardTooltip /> {/* Add the card tooltip modal component */}
 
       <div className="flex-1 flex flex-col w-3/5 mx-auto p-2">
         {/* Sekcja bitwy: Wróg vs Gracz */}
@@ -66,7 +65,7 @@ const PotopSzwedzki: React.FC = () => {
           <PlayerPanel />
         </div>
 
-        <div className="flex-1 z-20 flex ml-auto" > 
+        <div className="flex-1 z-20 flex ml-auto">
           <EventLogComponent />
         </div>
 

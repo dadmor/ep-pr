@@ -1,8 +1,8 @@
-// === GameCard.tsx (po aktualizacji) ===
-import React, { useState } from "react";
-import { Sword, Shield, Heart, Plus, Target, Info } from "lucide-react";
+import React from "react";
+import { Sword, Shield, Heart, Plus, Info, Target } from "lucide-react";
 import { Card } from "./gameStore";
 import { useGameStore } from "./gameStore";
+import { uiStore } from "./uiStore";
 
 interface GameCardProps {
   card: Card;
@@ -25,9 +25,9 @@ const GameCard: React.FC<GameCardProps> = ({
   isSelected = false,
   canBeAttacked = false,
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
   const canPlayCard = useGameStore((state) => state.canPlayCard);
   const gamePhase = useGameStore((state) => state.game.phase);
+  const setTooltipCard = uiStore((state) => state.setTooltipCard);
 
   const getRarityBorder = (rarity: Card["rarity"]): string => {
     switch (rarity) {
@@ -105,120 +105,15 @@ const GameCard: React.FC<GameCardProps> = ({
   const isAlive = currentCardHP > 0;
   const isDamaged = card.maxHP && currentCardHP < maxCardHP;
 
-  // Obsługa tooltipa
+  // Obsługa wyświetlania tooltipa
   const handleInfoToggle = (e: React.MouseEvent) => {
     e.stopPropagation(); // Zapobiega propagacji do onClick karty
-    setShowTooltip(!showTooltip);
+    setTooltipCard(card); // Show tooltip by setting the card in uiStore
   };
-
-  // Funkcja do zamykania tooltipa po kliknięciu poza nim
-  const handleClickOutside = () => {
-    if (showTooltip) {
-      setShowTooltip(false);
-    }
-  };
-
-  // Przygotuj zawartość tooltipa
-  const cardTooltip = (
-    <div
-      className="absolute z-50 -top-2 -left-2 transform -translate-y-full bg-amber-50 border-2 border-amber-300 rounded-lg p-3 shadow-xl min-w-64 text-sm"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-bold text-amber-900">{card.name}</h3>
-        <div className="flex items-center gap-2">
-          {card.cost !== undefined && (
-            <div className="flex items-center text-yellow-700 bg-yellow-200 px-1.5 py-0.5 rounded-full shadow-sm">
-              <Plus size={12} className="mr-0.5" /> {card.cost}
-            </div>
-          )}
-          <div className="text-xs px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-800">
-            {card.type}
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-2 text-amber-800">
-        <div className="font-semibold text-xs uppercase tracking-wide text-amber-600 mb-1">
-          Rzadkość
-        </div>
-        <div className="text-sm capitalize">{card.rarity}</div>
-      </div>
-
-      <div className="mb-2 text-amber-800">
-        <div className="font-semibold text-xs uppercase tracking-wide text-amber-600 mb-1">
-          Opis
-        </div>
-        <div className="text-sm">{card.description}</div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mt-3">
-        {card.attack > 0 && (
-          <div className="flex flex-col items-center">
-            <div className="font-semibold text-xs text-red-700 mb-0.5">
-              Atak
-            </div>
-            <div className="flex items-center text-red-700 bg-red-200 px-2 py-1 rounded">
-              <Sword size={14} className="mr-1" />
-              <span className="font-bold">{card.attack}</span>
-              {card.bonusAttack ? (
-                <span className="text-green-600 ml-0.5">
-                  +{card.bonusAttack}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        )}
-
-        {card.defense > 0 && (
-          <div className="flex flex-col items-center">
-            <div className="font-semibold text-xs text-blue-700 mb-0.5">
-              Obrona
-            </div>
-            <div className="flex items-center text-blue-700 bg-blue-200 px-2 py-1 rounded">
-              <Shield size={14} className="mr-1" />
-              <span className="font-bold">{card.defense}</span>
-              {card.bonusDefense ? (
-                <span className="text-green-600 ml-0.5">
-                  +{card.bonusDefense}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        )}
-
-        {(card.type === "unit" ||
-          card.type === "hero" ||
-          card.type === "fortification") && (
-          <div className="flex flex-col items-center">
-            <div className="font-semibold text-xs text-green-700 mb-0.5">
-              Zdrowie
-            </div>
-            <div className="flex items-center text-green-700 bg-green-200 px-2 py-1 rounded">
-              <Heart size={14} className="mr-1" />
-              <span className="font-bold">{currentCardHP}</span>
-              {isDamaged && (
-                <span className="text-amber-600 ml-0.5">/{maxCardHP}</span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-3 text-xs text-gray-500">
-        {card.used ? "Karta została już użyta w tej turze." : ""}
-        {!isAlive ? "Ta jednostka została zniszczona." : ""}
-        {canAttack ? "Ta jednostka może atakować." : ""}
-      </div>
-    </div>
-  );
 
   return (
     <div
-      onClick={(e) => {
-        handleClickOutside();
-        onClick && onClick();
-      }}
+      onClick={onClick}
       className={`${cardClass} relative`}
       style={{ background: backgroundStyle }}
     >
@@ -231,9 +126,6 @@ const GameCard: React.FC<GameCardProps> = ({
         >
           <Info size={12} className="text-amber-800" />
         </div>
-
-        {/* Tooltip z informacjami */}
-        {showTooltip && cardTooltip}
 
         {/* Badge kosztu w prawym górnym rogu */}
         {!isEnemy && (
