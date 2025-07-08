@@ -164,6 +164,8 @@ interface GameStore extends GameState {
   selectAttacker: (cardId: string | null) => void;
   attackCard: (attackerId: string, targetId: string) => void;
   endTurn: () => void;
+  opponentPlayCard: (cardName: string) => void;
+  opponentAttack: (attackerId: string, targetId: string) => void;
   loadScenario: (scenarioIndex: number) => void;
   resetGame: () => void;
   addMessage: (message: string) => void;
@@ -304,6 +306,46 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
+  // New method to simulate opponent playing a card
+  opponentPlayCard: (cardName: string) => {
+    set((state) => {
+      if (state.turn !== "opponent" || state.gameStatus !== "playing") return {};
+
+      // Find a card in the deck with the specified name
+      const cardToPlayIndex = state.opponent.deck.findIndex(
+        (c) => c.name === cardName
+      );
+
+      if (cardToPlayIndex === -1) {
+        get().addMessage(`Opponent has no ${cardName} in deck.`);
+        return {};
+      }
+
+      const cardToPlay = state.opponent.deck[cardToPlayIndex];
+      
+      if (state.opponent.gold < cardToPlay.cost) {
+        get().addMessage(`Opponent doesn't have enough gold to play ${cardName}.`);
+        return {};
+      }
+
+      const newDeck = [...state.opponent.deck];
+      newDeck.splice(cardToPlayIndex, 1);
+      get().addMessage(`Opponent played ${cardToPlay.name} for ${cardToPlay.cost} gold.`);
+
+      return {
+        opponent: {
+          ...state.opponent,
+          gold: state.opponent.gold - cardToPlay.cost,
+          deck: newDeck,
+          playArea: [
+            ...state.opponent.playArea,
+            { ...cardToPlay, hasAttacked: false },
+          ],
+        },
+      };
+    });
+  },
+
   selectAttacker: (cardId: string | null) => {
     set((state) => {
       if (state.turn !== "player" || state.gameStatus !== "playing") return {};
@@ -400,6 +442,86 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
+  // New method for opponent to attack a specific card
+  opponentAttack: (attackerId: string, targetId: string) => {
+    set((state) => {
+      if (state.turn !== "opponent" || state.gameStatus !== "playing") return {};
+
+      const attacker = state.opponent.playArea.find((c) => c.id === attackerId);
+      const target = state.player.playArea.find((c) => c.id === targetId);
+
+      if (!attacker || !target) {
+        get().addMessage("Invalid attack: Attacker or target not found.");
+        return {};
+      }
+      if (attacker.hasAttacked) {
+        get().addMessage(`Opponent's ${attacker.name} has already attacked this turn.`);
+        return {};
+      }
+
+      const damageDealt = calculateDamage(attacker, target);
+      const newTarget = { ...target, hp: target.hp - damageDealt };
+      const newAttacker = { ...attacker, hasAttacked: true };
+
+      get().addMessage(
+        `Opponent's ${attacker.name} attacked ${target.name} for ${damageDealt} damage.`
+      );
+
+      const updatedOpponentPlayArea = updateCardInArray(
+        state.opponent.playArea,
+        attackerId,
+        { hasAttacked: true }
+      );
+
+      // Check if target was defeated
+      if (newTarget.hp <= 0) {
+        get().addMessage(`${target.name} was defeated!`);
+        const updatedPlayerPlayArea = state.player.playArea.filter(
+          (card) => card.id !== targetId
+        );
+        get().addMessage(`Opponent gained ${target.goldValue} gold.`);
+
+        const newState = {
+          opponent: {
+            ...state.opponent,
+            playArea: updatedOpponentPlayArea,
+            gold: state.opponent.gold + target.goldValue,
+          },
+          player: {
+            ...state.player,
+            playArea: updatedPlayerPlayArea,
+          },
+        };
+
+        const gameStatus = checkWinConditions(
+          newState.player.playArea,
+          newState.opponent.playArea
+        );
+        return { ...newState, gameStatus };
+      } else {
+        const updatedPlayerPlayArea = updateCardInArray(
+          state.player.playArea,
+          targetId,
+          { hp: newTarget.hp }
+        );
+
+        return {
+          opponent: {
+            ...state.opponent,
+            playArea: updatedOpponentPlayArea,
+          },
+          player: {
+            ...state.player,
+            playArea: updatedPlayerPlayArea,
+          },
+        };
+      }
+    });
+    
+    // Always check win conditions after each attack
+    get().checkWinConditions();
+  },
+
   endTurn: () => {
     set((state) => {
       if (state.gameStatus !== "playing") return {};
@@ -407,6 +529,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const nextTurn = state.turn === "player" ? "opponent" : "player";
       get().addMessage(`Turn ended. It is now ${nextTurn}'s turn.`);
 
+      // When we end our turn, we always reset attack status for both players
       const newState = {
         ...state,
         player: {
@@ -421,10 +544,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         selectedAttackerId: null,
       };
 
-      if (nextTurn === "opponent") {
-        return opponentTurnLogic(newState as GameState, get().addMessage);
-      }
-
+      // We don't auto-process opponent turns anymore as the UI handles it with animations
       return newState;
     });
   },
@@ -456,6 +576,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 }));
 
 // --- Opponent AI Logic ---
+// Note: Most of this is now handled in the App component with animations
+// This is kept for reference or fallback purposes
+
 const findBestTarget = (targets: Card[]): number => {
   return targets.reduce(
     (minIndex, card, index, array) =>
