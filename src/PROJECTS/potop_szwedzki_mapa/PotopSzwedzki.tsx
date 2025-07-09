@@ -55,7 +55,6 @@ const GameWithAnimations: React.FC = () => {
     setIsAnimating,
     animateAttack,
     showNotification,
-    autoAnimateRef,
     animateCardDraw,
     animateCardPlay,
     executeOpponentTurn
