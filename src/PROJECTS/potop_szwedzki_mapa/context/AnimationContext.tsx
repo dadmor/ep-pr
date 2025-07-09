@@ -3,6 +3,13 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Card as CardType } from '../types';
 import { useGameStore } from '../store/gameStore';
+import { 
+  ANIMATION_DURATION, 
+  NOTIFICATION_TYPE, 
+  TURN_TYPE, 
+  WIN_CONDITION,
+  ATTACK_LUNGE_DISTANCE
+} from '../constants';
 
 interface AnimationContextType {
   // Animation state
@@ -107,28 +114,28 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const directionX = targetRect.left - attackerRect.left;
     const directionY = targetRect.top - attackerRect.top;
     
-    // Normalize to get a shorter movement distance (30% of the way)
+    // Normalize to get a shorter movement distance
     const distance = Math.sqrt(directionX * directionX + directionY * directionY);
-    const moveX = (directionX / distance) * distance * 0.3;
-    const moveY = (directionY / distance) * distance * 0.3;
+    const moveX = (directionX / distance) * distance * ATTACK_LUNGE_DISTANCE;
+    const moveY = (directionY / distance) * distance * ATTACK_LUNGE_DISTANCE;
     
     // Store original transform for resetting
     const originalTransform = attackerElement.style.transform;
     
     // Animate the attacker "lunging" toward the target
-    attackerElement.style.transition = 'transform 0.15s ease-out';
+    attackerElement.style.transition = `transform ${ANIMATION_DURATION.SHORT}ms ease-out`;
     attackerElement.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.1)`;
     
     // Return to original position
     setTimeout(() => {
-      attackerElement.style.transition = 'transform 0.15s ease-in';
+      attackerElement.style.transition = `transform ${ANIMATION_DURATION.SHORT}ms ease-in`;
       attackerElement.style.transform = originalTransform;
       
       // When attack animation completes, show damage
       setTimeout(() => {
         animateDamage(targetId, damage, onComplete);
-      }, 150);
-    }, 150);
+      }, ANIMATION_DURATION.SHORT);
+    }, ANIMATION_DURATION.SHORT);
   }, [getCardRef]);
   
   // Animation for damage
@@ -184,7 +191,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         { transform: 'scale(1.2)', opacity: 1 },
         { transform: 'scale(1)', opacity: 1 }
       ],
-      { duration: 300, easing: 'ease-out' }
+      { duration: ANIMATION_DURATION.SHORT, easing: 'ease-out' }
     );
     
     // Shake target card
@@ -211,7 +218,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     targetElement.style.backgroundColor = "rgba(255, 0, 0, 0.3)";
     setTimeout(() => {
       targetElement.style.backgroundColor = "";
-    }, 400);
+    }, ANIMATION_DURATION.MEDIUM);
     
     // Animate damage indicator floating up and fading out
     setTimeout(() => {
@@ -220,7 +227,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           { transform: 'translateY(0)', opacity: 1 },
           { transform: 'translateY(-40px)', opacity: 0 }
         ],
-        { duration: 700, easing: 'ease-out' }
+        { duration: ANIMATION_DURATION.LONG, easing: 'ease-out' }
       );
       
       animation.onfinish = () => {
@@ -228,7 +235,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (onComplete) onComplete();
         setIsAnimating(false);
       };
-    }, 400);
+    }, ANIMATION_DURATION.MEDIUM);
   }, [getCardRef]);
   
   // Notification system
@@ -253,9 +260,9 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     notificationEl.style.pointerEvents = "none";
 
     // Set background color based on type
-    if (type === "success") {
+    if (type === NOTIFICATION_TYPE.SUCCESS) {
       notificationEl.style.backgroundColor = "rgba(46, 204, 113, 0.9)";
-    } else if (type === "warning") {
+    } else if (type === NOTIFICATION_TYPE.WARNING) {
       notificationEl.style.backgroundColor = "rgba(230, 126, 34, 0.9)";
     } else {
       notificationEl.style.backgroundColor = "rgba(52, 152, 219, 0.9)";
@@ -270,7 +277,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         { opacity: 0, transform: 'translate(-50%, -60%)' },
         { opacity: 1, transform: 'translate(-50%, -50%)' }
       ],
-      { duration: 300, easing: 'ease-out' }
+      { duration: ANIMATION_DURATION.SHORT, easing: 'ease-out' }
     );
 
     // Hide notification after a delay
@@ -280,14 +287,14 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           { opacity: 1, transform: 'translate(-50%, -50%)' },
           { opacity: 0, transform: 'translate(-50%, -40%)' }
         ],
-        { duration: 400, easing: 'ease-in' }
+        { duration: ANIMATION_DURATION.MEDIUM, easing: 'ease-in' }
       );
       
       animation.onfinish = () => {
         document.body.removeChild(notificationEl);
         if (onComplete) onComplete();
       };
-    }, 1500);
+    }, ANIMATION_DURATION.NOTIFICATION);
   }, []);
 
   // New animation for drawing a card (moved from main component)
@@ -320,7 +327,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           { top: `${deckRect.top}px`, left: `${deckRect.left}px`, opacity: 1, transform: 'scale(1)' },
           { top: `${deckRect.top - 50}px`, left: `${deckRect.left + 100}px`, opacity: 0.8, transform: 'scale(0.9)' }
         ],
-        { duration: 400, easing: 'ease-in-out' }
+        { duration: ANIMATION_DURATION.MEDIUM, easing: 'ease-in-out' }
       );
       
       animation.onfinish = () => {
@@ -329,7 +336,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Execute game logic after animation
         useGameStore.getState().drawCard();
         
-        showNotification('Card drawn', 'info', () => {
+        showNotification('Card drawn', NOTIFICATION_TYPE.INFO, () => {
           setIsAnimating(false);
           if (onComplete) onComplete();
         });
@@ -337,7 +344,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } else {
       // Fallback if refs aren't available
       useGameStore.getState().drawCard();
-      showNotification('Card drawn', 'info', () => {
+      showNotification('Card drawn', NOTIFICATION_TYPE.INFO, () => {
         setIsAnimating(false);
         if (onComplete) onComplete();
       });
@@ -362,11 +369,11 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Use a small delay for visual feedback
     setTimeout(() => {
       useGameStore.getState().playCard(cardId);
-      showNotification(`Played ${card.name} for ${card.cost} gold`, 'info', () => {
+      showNotification(`Played ${card.name} for ${card.cost} gold`, NOTIFICATION_TYPE.INFO, () => {
         setIsAnimating(false);
         if (onComplete) onComplete();
       });
-    }, 200);
+    }, ANIMATION_DURATION.SHORT);
   }, [showNotification]);
 
   // Execute opponent's turn
@@ -385,7 +392,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Play the card with a small delay for animation
       setTimeout(() => {
         useGameStore.getState().opponentPlayCard(cardToPlay.name);
-        showNotification(`Opponent played ${cardToPlay.name}`, 'warning', () => {
+        showNotification(`Opponent played ${cardToPlay.name}`, NOTIFICATION_TYPE.WARNING, () => {
           // Continue with attack phase after playing card
           handleOpponentAttacks();
         });
@@ -404,7 +411,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     if (attackers.length === 0 || currentState.player.playArea.length === 0) {
       // No available attackers or targets, end turn
-      showNotification("Opponent's turn ends", 'info', () => {
+      showNotification("Opponent's turn ends", NOTIFICATION_TYPE.INFO, () => {
         useGameStore.getState().endTurn();
         setIsAnimating(false);
       });
@@ -422,7 +429,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     if (index >= attackers.length || currentState.player.playArea.length === 0) {
       // All attacks completed or no more targets, end turn
-      showNotification("Opponent's turn ends", 'info', () => {
+      showNotification("Opponent's turn ends", NOTIFICATION_TYPE.INFO, () => {
         useGameStore.getState().endTurn();
         setIsAnimating(false);
       });
@@ -434,7 +441,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Find best target (lowest HP)
     const targets = [...currentState.player.playArea].sort((a, b) => a.hp - b.hp);
     if (targets.length === 0) {
-      showNotification("Opponent's turn ends", 'info', () => {
+      showNotification("Opponent's turn ends", NOTIFICATION_TYPE.INFO, () => {
         useGameStore.getState().endTurn();
         setIsAnimating(false);
       });
@@ -447,7 +454,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const damage = Math.max(0, attacker.attack - target.armor);
     
     // Show notification before attack
-    showNotification(`Opponent's ${attacker.name} attacks your ${target.name}`, 'warning', () => {
+    showNotification(`Opponent's ${attacker.name} attacks your ${target.name}`, NOTIFICATION_TYPE.WARNING, () => {
       // Animate the attack
       animateAttack(attacker.id, target.id, damage, () => {
         // Update game state after animation completes
@@ -455,8 +462,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         
         // Check if player was defeated
         const updatedState = useGameStore.getState();
-        if (updatedState.gameStatus === 'opponentWins') {
-          showNotification('You have been defeated!', 'warning', () => {
+        if (updatedState.gameStatus === WIN_CONDITION.OPPONENT_WINS) {
+          showNotification('You have been defeated!', NOTIFICATION_TYPE.WARNING, () => {
             setIsAnimating(false);
           });
           return;
@@ -466,7 +473,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const targetStillExists = updatedState.player.playArea.some(card => card.id === target.id);
         
         if (!targetStillExists) {
-          showNotification(`Your ${target.name} was defeated!`, 'warning', () => {
+          showNotification(`Your ${target.name} was defeated!`, NOTIFICATION_TYPE.WARNING, () => {
             // Continue with next attack
             executeNextAttack(attackers, index + 1);
           });

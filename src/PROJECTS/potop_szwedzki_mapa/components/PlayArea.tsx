@@ -4,6 +4,7 @@ import { Card as CardType } from '../types';
 import Card from './Card';
 import { useAnimation } from '../context/AnimationContext';
 import { useGameStore } from '../store/gameStore';
+import { TURN_TYPE } from '../constants';
 
 interface PlayAreaProps {
   cards: CardType[];
@@ -24,13 +25,13 @@ const PlayArea: React.FC<PlayAreaProps> = ({
   const { turn } = useGameStore();
 
   const playAreaClasses = clsx(
-    'w-full flex justify-center items-center p-4 min-h-[200px]',
+    'w-full flex justify-center items-center ',
     'transition-colors duration-300', // Add transition for smoother effects
     {
-      'bg-red-800 bg-opacity-30 rounded-b-lg': isOpponent,
-      'bg-blue-800 bg-opacity-30 rounded-t-lg': !isOpponent,
-      'ring-2 ring-red-500 ring-opacity-50': isOpponent && canTarget && selectedAttackerId, // Highlight when attackable
-      'ring-2 ring-blue-400 ring-opacity-70': !isOpponent && turn === 'player' // Add blue highlight when it's player's turn
+      'bg-red-800 bg-opacity-10 rounded-lg': isOpponent,
+      'bg-blue-800 bg-opacity-10 rounded-lg': !isOpponent,
+      'ring-4 ring-red-500 ring-opacity-50': isOpponent && canTarget && selectedAttackerId, // Highlight when attackable
+      'ring-4 ring-blue-400 ring-opacity-70': !isOpponent && turn === TURN_TYPE.PLAYER // Add blue highlight when it's player's turn
     }
   );
 

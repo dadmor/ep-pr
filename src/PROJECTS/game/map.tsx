@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { create } from "zustand";
 
 interface Point {
@@ -9,6 +9,13 @@ interface Province {
   id: number;
   name: string;
   path: Point[];
+  color: string;
+}
+interface City {
+  id: number;
+  name: string;
+  position: Point;
+  size: number;
   color: string;
 }
 interface View {
@@ -22,6 +29,7 @@ interface CanvasSize {
 }
 interface MapState {
   provinces: Province[];
+  cities: City[];
   current: Point[];
   name: string;
   color: string;
@@ -32,14 +40,19 @@ interface MapState {
   snap: boolean;
   snapDist: number;
   canvasSize: CanvasSize;
+  mode: "province" | "city";
+  citySize: number;
+  pixelPerfect: boolean;
   set: (partial: Partial<MapState>) => void;
   addProvince: () => void;
+  addCity: (position: Point) => void;
   resetView: () => void;
   clearAll: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
   provinces: [],
+  cities: [],
   current: [],
   name: "",
   color: "#FF6B6B",
@@ -50,6 +63,9 @@ export const useMapStore = create<MapState>((set) => ({
   snap: true,
   snapDist: 15,
   canvasSize: { width: 800, height: 600 },
+  mode: "province",
+  citySize: 20,
+  pixelPerfect: true,
   set: (partial) => set((state) => ({ ...state, ...partial })),
   addProvince: () =>
     set((s) => {
@@ -66,10 +82,31 @@ export const useMapStore = create<MapState>((set) => ({
         ],
       };
     }),
+  addCity: (position) =>
+    set((s) => {
+      if (!s.name.trim()) return s;
+      return {
+        cities: [
+          ...s.cities,
+          {
+            id: Date.now(),
+            name: s.name,
+            position,
+            size: s.citySize,
+            color: s.color,
+          },
+        ],
+        name: "",
+        color: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"][
+          Math.floor(Math.random() * 4)
+        ],
+      };
+    }),
   resetView: () => set({ view: { x: 0, y: 0, scale: 1 } }),
   clearAll: () =>
     set({
       provinces: [],
+      cities: [],
       current: [],
       hover: null,
       view: { x: 0, y: 0, scale: 1 },
@@ -81,9 +118,11 @@ export default function ProvinceMapEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const bgRef = useRef<HTMLImageElement | null>(null);
+  const [devicePixelRatio, setDevicePixelRatio] = useState(window.devicePixelRatio || 1);
 
   const {
     provinces,
+    cities,
     current,
     name,
     color,
@@ -94,19 +133,39 @@ export default function ProvinceMapEditor() {
     snap,
     snapDist,
     canvasSize,
+    mode,
+    citySize,
+    pixelPerfect,
     set,
     addProvince,
+    addCity,
     resetView,
     clearAll,
   } = useMapStore();
 
   const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"];
 
+  // Helper function to snap a value to the nearest pixel
+  const snapToPixel = (value) => {
+    if (!pixelPerfect) return value;
+    return Math.round(value);
+  };
+
+  // Helper function to snap a point to the nearest pixel
+  const snapPointToPixel = (point: Point): Point => {
+    if (!pixelPerfect) return point;
+    return {
+      x: snapToPixel(point.x),
+      y: snapToPixel(point.y)
+    };
+  };
+
   const getPos = (e: React.MouseEvent) => {
     const r = canvasRef.current!.getBoundingClientRect();
     const x = (e.clientX - r.left) * (canvasRef.current!.width / r.width);
     const y = (e.clientY - r.top) * (canvasRef.current!.height / r.height);
-    return { x: (x - view.x) / view.scale, y: (y - view.y) / view.scale };
+    const point = { x: (x - view.x) / view.scale, y: (y - view.y) / view.scale };
+    return pixelPerfect ? snapPointToPixel(point) : point;
   };
 
   const nearest = (p: Point): Point | null => {
@@ -137,8 +196,8 @@ export default function ProvinceMapEditor() {
     set({
       view: {
         scale: s,
-        x: (p.clientWidth - canvasSize.width * s) / 2,
-        y: (p.clientHeight - canvasSize.height * s) / 2,
+        x: snapToPixel((p.clientWidth - canvasSize.width * s) / 2),
+        y: snapToPixel((p.clientHeight - canvasSize.height * s) / 2),
       },
     });
   };
@@ -170,6 +229,7 @@ export default function ProvinceMapEditor() {
       const d = JSON.parse(j);
       set({
         provinces: d.provinces || [],
+        cities: d.cities || [],
         canvasSize: d.mapSize || canvasSize,
         current: [],
       });
@@ -182,7 +242,7 @@ export default function ProvinceMapEditor() {
 
   const exportJSON = () => {
     const b = new Blob(
-      [JSON.stringify({ provinces, mapSize: canvasSize }, null, 2)],
+      [JSON.stringify({ provinces, cities, mapSize: canvasSize }, null, 2)],
       { type: "application/json" }
     );
     const u = URL.createObjectURL(b),
@@ -193,41 +253,79 @@ export default function ProvinceMapEditor() {
     URL.revokeObjectURL(u);
   };
 
+  // Configure canvas for high DPI screens
+  useEffect(() => {
+    const updatePixelRatio = () => {
+      setDevicePixelRatio(window.devicePixelRatio || 1);
+    };
+    
+    window.addEventListener('resize', updatePixelRatio);
+    return () => window.removeEventListener('resize', updatePixelRatio);
+  }, []);
+
   useEffect(() => {
     const c = canvasRef.current!;
     const ctx = c.getContext("2d");
     if (!ctx) return;
   
+    // Clear and prepare canvas with pixel-perfect scaling
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y);
+    
+    // Apply pixel-perfect transform
+    let transformX = view.x;
+    let transformY = view.y;
+    
+    if (pixelPerfect) {
+      transformX = snapToPixel(view.x);
+      transformY = snapToPixel(view.y);
+    }
+    
+    ctx.setTransform(view.scale, 0, 0, view.scale, transformX, transformY);
   
     if (bgRef.current)
       ctx.drawImage(bgRef.current, 0, 0, canvasSize.width, canvasSize.height);
   
+    // Rysowanie prowincji
     provinces.forEach((p) => {
       if (p.path.length < 3) return;
   
       const cx = p.path.reduce((s, pt) => s + pt.x, 0) / p.path.length;
       const cy = p.path.reduce((s, pt) => s + pt.y, 0) / p.path.length;
   
-      const offsetX = 3 / view.scale;
-      const offsetY = 6 / view.scale;
+      const offsetX = pixelPerfect ? snapToPixel(3 / view.scale) : 3 / view.scale;
+      const offsetY = pixelPerfect ? snapToPixel(6 / view.scale) : 6 / view.scale;
   
       // Cień pod poligonem
       ctx.beginPath();
-      ctx.moveTo(p.path[0].x + offsetX, p.path[0].y + offsetY);
-      p.path.forEach((pt) => ctx.lineTo(pt.x + offsetX, pt.y + offsetY));
+      ctx.moveTo(
+        pixelPerfect ? snapToPixel(p.path[0].x + offsetX) : p.path[0].x + offsetX, 
+        pixelPerfect ? snapToPixel(p.path[0].y + offsetY) : p.path[0].y + offsetY
+      );
+      
+      p.path.forEach((pt) => ctx.lineTo(
+        pixelPerfect ? snapToPixel(pt.x + offsetX) : pt.x + offsetX, 
+        pixelPerfect ? snapToPixel(pt.y + offsetY) : pt.y + offsetY
+      ));
+      
       ctx.closePath();
       ctx.fillStyle = "rgba(0,0,0,0.4)";
       ctx.shadowColor = "rgba(0,0,0,0.2)"; 
-      ctx.shadowBlur = 20 / view.scale;
+      ctx.shadowBlur = pixelPerfect ? snapToPixel(20 / view.scale) : 20 / view.scale;
       ctx.fill(); 
   
       // Wypełnienie poligonu
       ctx.beginPath();
-      ctx.moveTo(p.path[0].x, p.path[0].y);
-      p.path.forEach((pt) => ctx.lineTo(pt.x, pt.y));
+      ctx.moveTo(
+        pixelPerfect ? snapToPixel(p.path[0].x) : p.path[0].x, 
+        pixelPerfect ? snapToPixel(p.path[0].y) : p.path[0].y
+      );
+      
+      p.path.forEach((pt) => ctx.lineTo(
+        pixelPerfect ? snapToPixel(pt.x) : pt.x, 
+        pixelPerfect ? snapToPixel(pt.y) : pt.y
+      ));
+      
       ctx.closePath();
       ctx.fillStyle = "#3BAF4B";
       ctx.fill();
@@ -236,96 +334,247 @@ export default function ProvinceMapEditor() {
       ctx.save();
       ctx.clip();
   
-      ctx.shadowBlur = 30 / view.scale;
+      ctx.shadowBlur = pixelPerfect ? snapToPixel(30 / view.scale) : 30 / view.scale;
       ctx.shadowColor = p.color;
       ctx.strokeStyle = p.color;
-      ctx.lineWidth = 10 / view.scale;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(10 / view.scale) : 10 / view.scale;
       ctx.stroke();
   
-      ctx.shadowBlur = 20 / view.scale;
-      ctx.lineWidth = 6 / view.scale;
+      ctx.shadowBlur = pixelPerfect ? snapToPixel(20 / view.scale) : 20 / view.scale;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(6 / view.scale) : 6 / view.scale;
       ctx.stroke();
   
-      ctx.shadowBlur = 10 / view.scale;
-      ctx.lineWidth = 4 / view.scale;
+      ctx.shadowBlur = pixelPerfect ? snapToPixel(10 / view.scale) : 10 / view.scale;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(4 / view.scale) : 4 / view.scale;
       ctx.stroke();
   
       ctx.restore();
   
       // Cienki wyraźny kontur
       ctx.beginPath();
-      ctx.moveTo(p.path[0].x, p.path[0].y);
-      p.path.forEach((pt) => ctx.lineTo(pt.x, pt.y));
+      ctx.moveTo(
+        pixelPerfect ? snapToPixel(p.path[0].x) : p.path[0].x, 
+        pixelPerfect ? snapToPixel(p.path[0].y) : p.path[0].y
+      );
+      
+      p.path.forEach((pt) => ctx.lineTo(
+        pixelPerfect ? snapToPixel(pt.x) : pt.x, 
+        pixelPerfect ? snapToPixel(pt.y) : pt.y
+      ));
+      
       ctx.closePath();
       ctx.strokeStyle = p.color;
-      ctx.lineWidth = 3 / view.scale;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(3 / view.scale) : 3 / view.scale;
       ctx.stroke();
   
       // Jasny highlight u góry poligonu
       ctx.beginPath();
-      ctx.moveTo(p.path[0].x, p.path[0].y);
-      p.path.forEach((pt) => ctx.lineTo(pt.x, pt.y));
+      ctx.moveTo(
+        pixelPerfect ? snapToPixel(p.path[0].x) : p.path[0].x, 
+        pixelPerfect ? snapToPixel(p.path[0].y) : p.path[0].y
+      );
+      
+      p.path.forEach((pt) => ctx.lineTo(
+        pixelPerfect ? snapToPixel(pt.x) : pt.x, 
+        pixelPerfect ? snapToPixel(pt.y) : pt.y
+      ));
+      
       ctx.closePath();
       ctx.strokeStyle = "rgba(255,255,255,0.5)";
-      ctx.lineWidth = 1 / view.scale;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(1 / view.scale) : 1 / view.scale;
       ctx.stroke();
   
       // Nazwa prowincji
-      ctx.font = `${14 / view.scale}px Arial`;
+      ctx.font = `${pixelPerfect ? snapToPixel(14 / view.scale) : 14 / view.scale}px Arial`;
       ctx.textAlign = "center";
       ctx.fillStyle = "#333";
-      ctx.fillText(p.name, cx, cy);
+      ctx.fillText(p.name, pixelPerfect ? snapToPixel(cx) : cx, pixelPerfect ? snapToPixel(cy) : cy);
     });
   
-    if (current.length) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2 / view.scale;
+    // Rysowanie miast
+    cities.forEach((city) => {
+      const { position, size, name, color } = city;
+      const radius = pixelPerfect ? snapToPixel(size / view.scale) : size / view.scale;
+      const x = pixelPerfect ? snapToPixel(position.x) : position.x;
+      const y = pixelPerfect ? snapToPixel(position.y) : position.y;
+      
+      // Cień pod miastem
       ctx.beginPath();
-      ctx.moveTo(current[0].x, current[0].y);
-      current.forEach((p) => ctx.lineTo(p.x, p.y));
+      ctx.arc(
+        pixelPerfect ? snapToPixel(x + 2 / view.scale) : x + 2 / view.scale,
+        pixelPerfect ? snapToPixel(y + 4 / view.scale) : y + 4 / view.scale,
+        radius, 0, Math.PI * 2
+      );
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.shadowColor = "rgba(0,0,0,0.3)";
+      ctx.shadowBlur = pixelPerfect ? snapToPixel(10 / view.scale) : 10 / view.scale;
+      ctx.fill();
+      
+      // Główne koło miasta
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "#F8F8F8";
+      ctx.fill();
+      
+      // Kontur miasta
+      ctx.strokeStyle = color;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(3 / view.scale) : 3 / view.scale;
       ctx.stroke();
+      
+      // Wewnętrzny krąg
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      
+      // Nazwa miasta z cieniem
+      const fontSize = pixelPerfect 
+        ? snapToPixel(Math.max(12, Math.min(size * 0.7, 20)) / view.scale) 
+        : Math.max(12, Math.min(size * 0.7, 20)) / view.scale;
+      
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#333";
+      ctx.shadowColor = "rgba(255,255,255,0.8)";
+      ctx.shadowBlur = pixelPerfect ? snapToPixel(3 / view.scale) : 3 / view.scale;
+      ctx.fillText(
+        name, 
+        x, 
+        pixelPerfect ? snapToPixel(y + radius + 5 / view.scale) : y + radius + 5 / view.scale
+      );
+      
+      // Wielkość miasta (jako liczba)
+      const innerFontSize = pixelPerfect 
+        ? snapToPixel(Math.max(10, Math.min(size * 0.5, 16)) / view.scale) 
+        : Math.max(10, Math.min(size * 0.5, 16)) / view.scale;
+      
+      ctx.font = `${innerFontSize}px Arial`;
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff";
+      ctx.shadowBlur = 0;
+      ctx.fillText(size.toString(), x, y);
+    });
+    
+    // Rysowanie aktualnie tworzonej prowincji
+    if (mode === "province" && current.length) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(2 / view.scale) : 2 / view.scale;
+      ctx.beginPath();
+      
+      const startX = pixelPerfect ? snapToPixel(current[0].x) : current[0].x;
+      const startY = pixelPerfect ? snapToPixel(current[0].y) : current[0].y;
+      
+      ctx.moveTo(startX, startY);
+      
+      current.forEach((p) => {
+        const px = pixelPerfect ? snapToPixel(p.x) : p.x;
+        const py = pixelPerfect ? snapToPixel(p.y) : p.y;
+        ctx.lineTo(px, py);
+      });
+      
+      ctx.stroke();
+      
       current.forEach((p, i) => {
+        const px = pixelPerfect ? snapToPixel(p.x) : p.x;
+        const py = pixelPerfect ? snapToPixel(p.y) : p.y;
+        const dotRadius = pixelPerfect ? snapToPixel(4 / view.scale) : 4 / view.scale;
+        
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 4 / view.scale, 0, 6.28);
+        ctx.arc(px, py, dotRadius, 0, 6.28);
         ctx.fillStyle = i ? "#fff" : color;
         ctx.fill();
       });
     }
-  
+    
+    // Rysowanie punktu przyciągania
     if (hover) {
+      const hx = pixelPerfect ? snapToPixel(hover.x) : hover.x;
+      const hy = pixelPerfect ? snapToPixel(hover.y) : hover.y;
+      const hoverRadius = pixelPerfect ? snapToPixel(6 / view.scale) : 6 / view.scale;
+      
       ctx.beginPath();
-      ctx.arc(hover.x, hover.y, 6 / view.scale, 0, 6.28);
+      ctx.arc(hx, hy, hoverRadius, 0, 6.28);
       ctx.fillStyle = "#007bff80";
       ctx.fill();
     }
+    
+    // Podgląd miasta w trybie dodawania miast
+    if (mode === "city" && hover) {
+      const hx = pixelPerfect ? snapToPixel(hover.x) : hover.x;
+      const hy = pixelPerfect ? snapToPixel(hover.y) : hover.y;
+      const radius = pixelPerfect ? snapToPixel(citySize / view.scale) : citySize / view.scale;
+      
+      ctx.beginPath();
+      ctx.arc(hx, hy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = pixelPerfect ? snapToPixel(2 / view.scale) : 2 / view.scale;
+      ctx.stroke();
+    }
   });
-  
 
+  // Handle canvas sizing and pixel ratio adjustments
   useEffect(() => {
     const c = canvasRef.current;
     const resize = () => {
-      const p = c?.parentElement;
+      if (!c) return;
+      const p = c.parentElement;
       if (p) {
-        c.width = p.clientWidth;
-        c.height = p.clientHeight;
+        // Calculate logical size based on parent container
+        const logicalWidth = p.clientWidth;
+        const logicalHeight = p.clientHeight;
+        
+        // Set CSS size
+        c.style.width = `${logicalWidth}px`;
+        c.style.height = `${logicalHeight}px`;
+        
+        // Scale for high DPI displays
+        c.width = Math.floor(logicalWidth * devicePixelRatio);
+        c.height = Math.floor(logicalHeight * devicePixelRatio);
+        
+        // Adjust the context scale for high DPI
+        const ctx = c.getContext('2d');
+        if (ctx) {
+          ctx.resetTransform();
+          ctx.scale(devicePixelRatio, devicePixelRatio);
+        }
       }
     };
+    
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, []);
+  }, [devicePixelRatio]);
 
   return (
     <div className="h-screen bg-gray-700 text-white flex flex-col">
       <header className="p-2 flex justify-between bg-gray-800">
-        <h1>🗺️ Edytor Map</h1>
+        <div className="flex items-center space-x-2">
+          <h1>🗺️ Edytor Map</h1>
+          <div className="flex bg-gray-700 rounded overflow-hidden">
+            <button
+              onClick={() => set({ mode: "province" })}
+              className={`px-2 py-1 text-xs ${mode === "province" ? "bg-blue-600" : ""}`}
+            >
+              Prowincje
+            </button>
+            <button
+              onClick={() => set({ mode: "city" })}
+              className={`px-2 py-1 text-xs ${mode === "city" ? "bg-blue-600" : ""}`}
+            >
+              Miasta
+            </button>
+          </div>
+        </div>
         <span>Zoom: {Math.round(view.scale * 100)}%</span>
       </header>
       <div className="flex flex-1">
         <aside className="w-60 p-2 space-y-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-fulltext-xs p-2"
+            className="w-full text-xs p-2 bg-gray-600"
           >
             📷 Wczytaj tło
           </button>
@@ -339,9 +588,24 @@ export default function ProvinceMapEditor() {
           <input
             value={name}
             onChange={(e) => set({ name: e.target.value })}
-            placeholder="Nazwa"
+            placeholder={mode === "province" ? "Nazwa prowincji" : "Nazwa miasta"}
             className="w-full text-xs p-2 text-black"
           />
+          
+          {mode === "city" && (
+            <div className="flex flex-col">
+              <label className="text-xs mb-1">Wielkość miasta: {citySize}</label>
+              <input
+                type="range"
+                min="5"
+                max="50"
+                value={citySize}
+                onChange={(e) => set({ citySize: +e.target.value })}
+                className="w-full"
+              />
+            </div>
+          )}
+          
           <div className="grid grid-cols-4 gap-1">
             {colors.map((c) => (
               <button
@@ -352,12 +616,17 @@ export default function ProvinceMapEditor() {
               />
             ))}
           </div>
-          <button
-            onClick={addProvince}
-            className="w-full bg-green-700 text-xs mt-1 p-2"
-          >
-            ✅ Dodaj
-          </button>
+          
+          {mode === "province" && (
+            <button
+              onClick={addProvince}
+              className="w-full bg-green-700 text-xs mt-1 p-2"
+              disabled={current.length < 3 || !name.trim()}
+            >
+              ✅ Dodaj prowincję
+            </button>
+          )}
+          
           <label className="flex items-center text-xs">
             <input
               type="checkbox"
@@ -376,6 +645,17 @@ export default function ProvinceMapEditor() {
             disabled={!snap}
             className="w-full"
           />
+          
+          <label className="flex items-center text-xs">
+            <input
+              type="checkbox"
+              checked={pixelPerfect}
+              onChange={(e) => set({ pixelPerfect: e.target.checked })}
+              className="mr-1"
+            />
+            Pixel Perfect
+          </label>
+          
           <button
             onClick={exportJSON}
             className="w-full bg-green-700 text-xs mt-1 p-2"
@@ -413,7 +693,11 @@ export default function ProvinceMapEditor() {
                 set({ drag: true, dragStart: { x: e.clientX, y: e.clientY } });
               } else {
                 const p = getPos(e);
-                set({ current: [...current, nearest(p) || p] });
+                if (mode === "province") {
+                  set({ current: [...current, nearest(p) || p] });
+                } else if (mode === "city" && name.trim()) {
+                  addCity(nearest(p) || p);
+                }
               }
             }}
             onMouseMove={(e) => {
@@ -427,7 +711,7 @@ export default function ProvinceMapEditor() {
                   dragStart: { x: e.clientX, y: e.clientY },
                 });
               } else {
-                set({ hover: nearest(getPos(e)) });
+                set({ hover: nearest(getPos(e)) || getPos(e) });
               }
             }}
             onMouseUp={() => set({ drag: false })}
@@ -454,22 +738,52 @@ export default function ProvinceMapEditor() {
             className="w-full h-full cursor-crosshair"
           />
         </main>
-        <aside className="w-48 bg-gray-700 p-2 overflow-y-auto">
-          {provinces.map((p) => (
-            <div
-              key={p.id}
-              className="flex justify-between items-center text-xs bg-gray-700 px-1 mb-1"
-            >
-              <span>{p.name}</span>
-              <button
-                onClick={() =>
-                  set({ provinces: provinces.filter((pp) => pp.id !== p.id) })
-                }
+        <aside className="w-48 bg-gray-800 p-2 overflow-y-auto">
+          <div className="mb-2">
+            <h3 className="text-sm font-bold border-b border-gray-600 pb-1 mb-1">Prowincje</h3>
+            {provinces.map((p) => (
+              <div
+                key={p.id}
+                className="flex justify-between items-center text-xs bg-gray-700 px-2 py-1 mb-1 rounded"
               >
-                &times;
-              </button>
-            </div>
-          ))}
+                <span>{p.name}</span>
+                <button
+                  onClick={() =>
+                    set({ provinces: provinces.filter((pp) => pp.id !== p.id) })
+                  }
+                  className="text-red-400 hover:text-red-200"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-bold border-b border-gray-600 pb-1 mb-1">Miasta</h3>
+            {cities.map((city) => (
+              <div
+                key={city.id}
+                className="flex justify-between items-center text-xs bg-gray-700 px-2 py-1 mb-1 rounded"
+              >
+                <div className="flex items-center">
+                  <div 
+                    className="w-2 h-2 rounded-full mr-1" 
+                    style={{ backgroundColor: city.color }}
+                  ></div>
+                  <span>{city.name} ({city.size})</span>
+                </div>
+                <button
+                  onClick={() =>
+                    set({ cities: cities.filter((c) => c.id !== city.id) })
+                  }
+                  className="text-red-400 hover:text-red-200"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
         </aside>
       </div>
     </div>

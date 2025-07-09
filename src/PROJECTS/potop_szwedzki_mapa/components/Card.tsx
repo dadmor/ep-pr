@@ -4,6 +4,12 @@ import clsx from 'clsx';
 import { Card as CardType } from '../types';
 import { useAnimation } from '../context/AnimationContext';
 
+// Constants for health bar thresholds
+const HEALTH_THRESHOLD = {
+  HIGH: 66,
+  MEDIUM: 33
+};
+
 interface CardProps {
   card: CardType;
   onClick?: (cardId: string) => void;
@@ -43,7 +49,7 @@ const Card: React.FC<CardProps> = ({
 
   // Organize CSS classes with clsx
   const cardClasses = clsx(
-    'relative w-32 h-48 bg-gray-800 rounded-lg shadow-lg text-white font-bold',
+    'relative w-32 h-48 bg-zinc-700 rounded-lg shadow-lg text-white font-bold',
     'flex flex-col justify-between items-center p-2 m-2 border-2',
     'transition-all duration-300', // For smoother transitions
     {
@@ -51,7 +57,7 @@ const Card: React.FC<CardProps> = ({
       'border-blue-500 ring-4 ring-blue-500': isSelected,
       'border-green-500 ring-2 ring-green-500': isPlayable,
       'opacity-70 grayscale': card.hasAttacked,
-      'border-gray-700': !isSelected && !isPlayable
+      'border-zinc-800': !isSelected && !isPlayable
     },
     className
   );
@@ -85,12 +91,12 @@ const Card: React.FC<CardProps> = ({
         </div>
         
         {/* HP Progress bar */}
-        <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-zinc-700 rounded-full h-3 overflow-hidden">
           <div 
             className={clsx(
               "h-full rounded-full transition-all duration-300",
-              hpPercentage > 66 ? "bg-green-500" : 
-              hpPercentage > 33 ? "bg-yellow-500" : "bg-red-500"
+              hpPercentage > HEALTH_THRESHOLD.HIGH ? "bg-green-500" : 
+              hpPercentage > HEALTH_THRESHOLD.MEDIUM ? "bg-yellow-500" : "bg-red-500"
             )}
             style={{ width: `${hpPercentage}%` }}
           ></div>

@@ -1,131 +1,38 @@
 // store/gameStore.ts
 import { create } from "zustand";
 import { Card, GameState, Scenario } from "../types";
-import { v4 as uuidv4 } from "uuid";
+import { 
+  allCards, 
+  scenarios, 
+  createShuffledDeck, 
+  resetCardsAttackStatus, 
+  getNewCardInstance,
+  calculateDamage,
+  updateCardInArray
+} from "../gameData";
+import {
+  WIN_CONDITION,
+  TURN_TYPE,
+  MAX_HAND_SIZE,
+  CARD_DRAW_COST,
+  INITIAL_HAND_SIZE,
+  MAX_MESSAGES_LOG
+} from "../constants";
 
-// --- Helper Functions ---
-const getNewCardInstance = (cardTemplate: Card): Card => ({
-  ...cardTemplate,
-  id: uuidv4(),
-  hp: cardTemplate.maxHp,
-  hasAttacked: false,
-});
-
-const calculateDamage = (attacker: Card, target: Card): number =>
-  Math.max(0, attacker.attack - target.armor);
-
-const updateCardInArray = (
-  cards: Card[],
-  cardId: string,
-  updates: Partial<Card>
-): Card[] =>
-  cards.map((card) => (card.id === cardId ? { ...card, ...updates } : card));
-
+// Check win conditions based on cards in play
 const checkWinConditions = (
   playerPlayArea: Card[],
   opponentPlayArea: Card[]
 ): "playing" | "playerWins" | "opponentWins" => {
-  if (playerPlayArea.length === 0) return "opponentWins";
-  if (opponentPlayArea.length === 0) return "playerWins";
-  return "playing";
+  if (playerPlayArea.length === 0) return WIN_CONDITION.OPPONENT_WINS;
+  if (opponentPlayArea.length === 0) return WIN_CONDITION.PLAYER_WINS;
+  return WIN_CONDITION.PLAYING;
 };
 
-// --- Game Assets (Example Cards) ---
-const allCards: Card[] = [
-  {
-    id: uuidv4(),
-    name: "Knight",
-    hp: 10,
-    maxHp: 10,
-    armor: 2,
-    attack: 3,
-    cost: 3,
-    goldValue: 6,
-    hasAttacked: false,
-  },
-  {
-    id: uuidv4(),
-    name: "Archer",
-    hp: 7,
-    maxHp: 7,
-    armor: 0,
-    attack: 4,
-    cost: 2,
-    goldValue: 4,
-    hasAttacked: false,
-  },
-  {
-    id: uuidv4(),
-    name: "Defender",
-    hp: 12,
-    maxHp: 12,
-    armor: 3,
-    attack: 2,
-    cost: 4,
-    goldValue: 8,
-    hasAttacked: false,
-  },
-  {
-    id: uuidv4(),
-    name: "Goblin",
-    hp: 5,
-    maxHp: 5,
-    armor: 0,
-    attack: 2,
-    cost: 1,
-    goldValue: 2,
-    hasAttacked: false,
-  },
-  {
-    id: uuidv4(),
-    name: "Ogre",
-    hp: 15,
-    maxHp: 15,
-    armor: 1,
-    attack: 5,
-    cost: 5,
-    goldValue: 10,
-    hasAttacked: false,
-  },
-];
-
-// --- Scenarios ---
-const scenarios: Scenario[] = [
-  {
-    name: "First Blood",
-    playerStartingCards: [
-      getNewCardInstance(allCards[0]),
-      getNewCardInstance(allCards[1]),
-      getNewCardInstance(allCards[3]),
-    ],
-    opponentStartingCards: [
-      getNewCardInstance(allCards[2]),
-      getNewCardInstance(allCards[3]),
-    ],
-    startingPlayer: "player",
-    playerStartingGold: 5,
-    opponentStartingGold: 3,
-  },
-  {
-    name: "Reinforcements",
-    playerStartingCards: [
-      getNewCardInstance(allCards[0]),
-      getNewCardInstance(allCards[3]),
-    ],
-    opponentStartingCards: [
-      getNewCardInstance(allCards[4]),
-      getNewCardInstance(allCards[1]),
-    ],
-    startingPlayer: "opponent",
-    playerStartingGold: 7,
-    opponentStartingGold: 6,
-  },
-];
-
-// --- Initial State Function ---
+// Get initial state for a scenario
 const getInitialState = (scenario: Scenario): GameState => ({
   player: {
-    id: "player",
+    id: TURN_TYPE.PLAYER,
     name: "Player",
     deck: createShuffledDeck(scenario.playerStartingCards),
     hand: [],
@@ -133,7 +40,7 @@ const getInitialState = (scenario: Scenario): GameState => ({
     gold: scenario.playerStartingGold,
   },
   opponent: {
-    id: "opponent",
+    id: TURN_TYPE.OPPONENT,
     name: "Opponent",
     deck: createShuffledDeck(scenario.opponentStartingCards),
     hand: [],
@@ -144,18 +51,9 @@ const getInitialState = (scenario: Scenario): GameState => ({
   selectedAttackerId: null,
   scenarios: scenarios,
   currentScenarioIndex: 0,
-  gameStatus: "playing",
+  gameStatus: WIN_CONDITION.PLAYING,
   messages: [],
 });
-
-const createShuffledDeck = (excludedCards: Card[]): Card[] =>
-  [...allCards]
-    .sort(() => 0.5 - Math.random())
-    .map(getNewCardInstance)
-    .filter((c) => !excludedCards.some((ec) => ec.name === c.name));
-
-const resetCardsAttackStatus = (cards: Card[]): Card[] =>
-  cards.map((card) => ({ ...card, hasAttacked: false }));
 
 // Define the store's state and actions
 interface GameStore extends GameState {
@@ -182,7 +80,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newMessages = [...state.messages, message];
       return {
         messages:
-          newMessages.length > 10 ? newMessages.slice(-10) : newMessages,
+          newMessages.length > MAX_MESSAGES_LOG ? newMessages.slice(-MAX_MESSAGES_LOG) : newMessages,
       };
     });
   },
@@ -198,13 +96,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       scenarioToLoad.playerStartingCards
     );
 
-    // Draw initial hand (3 cards)
+    // Draw initial hand
     const initialPlayerHand = [];
     let remainingPlayerDeck = [...newPlayerDeck];
 
     for (
       let i = 0;
-      i < 3 && remainingPlayerDeck.length > 0 && initialPlayerHand.length < 5;
+      i < INITIAL_HAND_SIZE && remainingPlayerDeck.length > 0 && initialPlayerHand.length < MAX_HAND_SIZE;
       i++
     ) {
       const [drawnCard, ...restDeck] = remainingPlayerDeck;
@@ -214,7 +112,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       player: {
-        id: "player",
+        id: TURN_TYPE.PLAYER,
         name: "Player",
         deck: remainingPlayerDeck,
         hand: initialPlayerHand,
@@ -222,7 +120,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         gold: scenarioToLoad.playerStartingGold,
       },
       opponent: {
-        id: "opponent",
+        id: TURN_TYPE.OPPONENT,
         name: "Opponent",
         deck: createShuffledDeck(scenarioToLoad.opponentStartingCards),
         hand: [],
@@ -232,7 +130,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       turn: scenarioToLoad.startingPlayer,
       selectedAttackerId: null,
       currentScenarioIndex: scenarioIndex,
-      gameStatus: "playing",
+      gameStatus: WIN_CONDITION.PLAYING,
       messages: [`Scenario "${scenarioToLoad.name}" loaded!`],
     });
   },
@@ -240,15 +138,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   drawCard: () => {
     set((state) => {
       if (
-        state.turn !== "player" ||
-        state.player.hand.length >= 5 ||
-        state.player.gold < 1 ||
+        state.turn !== TURN_TYPE.PLAYER ||
+        state.player.hand.length >= MAX_HAND_SIZE ||
+        state.player.gold < CARD_DRAW_COST ||
         state.player.deck.length === 0
       ) {
         get().addMessage(
           state.player.deck.length === 0
             ? "Your deck is empty!"
-            : state.player.gold < 1
+            : state.player.gold < CARD_DRAW_COST
             ? "Not enough gold to draw a card."
             : "Cannot draw card: Not your turn or hand is full."
         );
@@ -256,14 +154,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
 
       const [drawnCard, ...remainingDeck] = state.player.deck;
-      get().addMessage(`Player drew ${drawnCard.name} for 1 gold.`);
+      get().addMessage(`Player drew ${drawnCard.name} for ${CARD_DRAW_COST} gold.`);
 
       return {
         player: {
           ...state.player,
           hand: [...state.player.hand, drawnCard],
           deck: remainingDeck,
-          gold: state.player.gold - 1,
+          gold: state.player.gold - CARD_DRAW_COST,
         },
       };
     });
@@ -271,7 +169,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   playCard: (cardId: string) => {
     set((state) => {
-      if (state.turn !== "player" || state.gameStatus !== "playing") return {};
+      if (state.turn !== TURN_TYPE.PLAYER || state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
       const cardToPlayIndex = state.player.hand.findIndex(
         (c) => c.id === cardId
@@ -306,10 +204,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  // New method to simulate opponent playing a card
+  // Method to simulate opponent playing a card
   opponentPlayCard: (cardName: string) => {
     set((state) => {
-      if (state.turn !== "opponent" || state.gameStatus !== "playing") return {};
+      if (state.turn !== TURN_TYPE.OPPONENT || state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
       // Find a card in the deck with the specified name
       const cardToPlayIndex = state.opponent.deck.findIndex(
@@ -348,7 +246,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   selectAttacker: (cardId: string | null) => {
     set((state) => {
-      if (state.turn !== "player" || state.gameStatus !== "playing") return {};
+      if (state.turn !== TURN_TYPE.PLAYER || state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
       if (cardId === null) return { selectedAttackerId: null };
 
@@ -366,7 +264,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   attackCard: (attackerId: string, targetId: string) => {
     set((state) => {
-      if (state.turn !== "player" || state.gameStatus !== "playing") return {};
+      if (state.turn !== TURN_TYPE.PLAYER || state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
       const attacker = state.player.playArea.find((c) => c.id === attackerId);
       const target = state.opponent.playArea.find((c) => c.id === targetId);
@@ -382,7 +280,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       const damageDealt = calculateDamage(attacker, target);
       const newTarget = { ...target, hp: target.hp - damageDealt };
-
 
       get().addMessage(
         `${attacker.name} attacked ${target.name} for ${damageDealt} damage.`
@@ -442,10 +339,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  // New method for opponent to attack a specific card
+  // Method for opponent to attack a specific card
   opponentAttack: (attackerId: string, targetId: string) => {
     set((state) => {
-      if (state.turn !== "opponent" || state.gameStatus !== "playing") return {};
+      if (state.turn !== TURN_TYPE.OPPONENT || state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
       const attacker = state.opponent.playArea.find((c) => c.id === attackerId);
       const target = state.player.playArea.find((c) => c.id === targetId);
@@ -462,7 +359,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const damageDealt = calculateDamage(attacker, target);
       const newTarget = { ...target, hp: target.hp - damageDealt };
     
-
       get().addMessage(
         `Opponent's ${attacker.name} attacked ${target.name} for ${damageDealt} damage.`
       );
@@ -524,9 +420,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   endTurn: () => {
     set((state) => {
-      if (state.gameStatus !== "playing") return {};
+      if (state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
-      const nextTurn = state.turn === "player" ? "opponent" : "player";
+      const nextTurn = state.turn === TURN_TYPE.PLAYER ? TURN_TYPE.OPPONENT : TURN_TYPE.PLAYER;
       get().addMessage(`Turn ended. It is now ${nextTurn}'s turn.`);
 
       // When we end our turn, we always reset attack status for both players
@@ -555,16 +451,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   checkWinConditions: () => {
     set((state) => {
-      if (state.gameStatus !== "playing") return {};
+      if (state.gameStatus !== WIN_CONDITION.PLAYING) return {};
 
       const gameStatus = checkWinConditions(
         state.player.playArea,
         state.opponent.playArea
       );
 
-      if (gameStatus !== "playing") {
+      if (gameStatus !== WIN_CONDITION.PLAYING) {
         get().addMessage(
-          gameStatus === "playerWins"
+          gameStatus === WIN_CONDITION.PLAYER_WINS
             ? "Opponent has no cards left on the table. Player wins!"
             : "Player has no cards left on the table. Opponent wins!"
         );

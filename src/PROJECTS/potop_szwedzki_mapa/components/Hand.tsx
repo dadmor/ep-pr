@@ -5,6 +5,7 @@ import Card from './Card';
 import { useAnimation } from '../context/AnimationContext';
 import { useGameStore } from '../store/gameStore';
 import clsx from 'clsx';
+import { TURN_TYPE } from '../constants';
 
 interface HandProps {
   hand: CardType[];
@@ -20,8 +21,8 @@ const Hand: React.FC<HandProps> = ({ hand, onCardClick, gold }) => {
     <div 
       ref={autoAnimateRef}
       className={clsx(
-        "w-full flex justify-center py-4 bg-gray-900 rounded-t-lg transition-all duration-300",
-        turn === 'player' && "ring-2 ring-blue-400 ring-opacity-70"
+        "w-full flex justify-center py-1 bg-amber-100/50 rounded-t-lg transition-all duration-300",
+        turn === TURN_TYPE.PLAYER && "ring-2 ring-amber-400 ring-opacity-70"
       )}
       data-area="hand"
     >

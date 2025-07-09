@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { useAnimation } from '../context/AnimationContext';
 import clsx from 'clsx';
+import { TURN_TYPE, WIN_CONDITION, MAX_MESSAGES_LOG } from '../constants';
 
 interface GameInfoProps {
   onNextScenario: () => void;
@@ -33,7 +34,7 @@ const GameInfo: React.FC<GameInfoProps> = ({ onNextScenario, onResetGame }) => {
           Current: 
           <span className={clsx(
             "font-semibold capitalize ml-2 transition-colors duration-300",
-            { 'text-blue-400': turn === 'player', 'text-red-400': turn === 'opponent' }
+            { 'text-blue-400': turn === TURN_TYPE.PLAYER, 'text-red-400': turn === TURN_TYPE.OPPONENT }
           )}>
             {turn}
           </span>
@@ -84,14 +85,14 @@ const GameInfo: React.FC<GameInfoProps> = ({ onNextScenario, onResetGame }) => {
       <div className={clsx(
         "text-lg font-bold text-center py-2 rounded-lg transition-all duration-500",
         {
-          'bg-green-500 bg-opacity-20': gameStatus === 'playerWins',
-          'bg-red-500 bg-opacity-20': gameStatus === 'opponentWins',
-          'bg-blue-500 bg-opacity-10': gameStatus === 'playing'
+          'bg-green-500 bg-opacity-20': gameStatus === WIN_CONDITION.PLAYER_WINS,
+          'bg-red-500 bg-opacity-20': gameStatus === WIN_CONDITION.OPPONENT_WINS,
+          'bg-blue-500 bg-opacity-10': gameStatus === WIN_CONDITION.PLAYING
         }
       )}>
-        {gameStatus === 'playerWins' && <p className="text-green-400">YOU WIN!</p>}
-        {gameStatus === 'opponentWins' && <p className="text-red-400">YOU LOSE!</p>}
-        {gameStatus === 'playing' && <p className="text-blue-400">Game On!</p>}
+        {gameStatus === WIN_CONDITION.PLAYER_WINS && <p className="text-green-400">YOU WIN!</p>}
+        {gameStatus === WIN_CONDITION.OPPONENT_WINS && <p className="text-red-400">YOU LOSE!</p>}
+        {gameStatus === WIN_CONDITION.PLAYING && <p className="text-blue-400">Game On!</p>}
       </div>
 
       {messages.length > 0 && (
@@ -114,9 +115,9 @@ const GameInfo: React.FC<GameInfoProps> = ({ onNextScenario, onResetGame }) => {
         </div>
       )}
 
-      {gameStatus !== 'playing' && (
+      {gameStatus !== WIN_CONDITION.PLAYING && (
         <div className="flex flex-col space-y-2">
-          {gameStatus === 'playerWins' && currentScenarioIndex < scenarios.length - 1 && (
+          {gameStatus === WIN_CONDITION.PLAYER_WINS && currentScenarioIndex < scenarios.length - 1 && (
             <button
               onClick={onNextScenario}
               disabled={isAnimating}
