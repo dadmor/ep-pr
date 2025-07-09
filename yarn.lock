@@ -401,6 +401,20 @@
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.3.7.tgz#b89ddf2cd83b4feafcc4e2ea41afdfb95a0d194f"
   integrity sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==
 
+"@types/react-motion@^0.0.40":
+  version "0.0.40"
+  resolved "https://registry.yarnpkg.com/@types/react-motion/-/react-motion-0.0.40.tgz#e743961e999688d9aa31d6e6b71b65cbb53b3104"
+  integrity sha512-Bp6i9WTvW6QFN2E/XQPm8HPGMx1SVJ7H1DPsvptwWWh1XBymDZ7N7SK4nSZT/4tP4bTGvp1KHSAsswWZKO/WHA==
+  dependencies:
+    "@types/react" "*"
+
+"@types/react@*":
+  version "19.1.8"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-19.1.8.tgz#ff8395f2afb764597265ced15f8dddb0720ae1c3"
+  integrity sha512-AwAfQ2Wa5bCx9WP8nZL2uMZWod7J7/JSplxbTmBQ5ms6QpqNYm672H0Vu9ZVKVngQ+ii4R/byguVEUZQyeg44g==
+  dependencies:
+    csstype "^3.0.2"
+
 "@types/react@^18.0.28":
   version "18.3.21"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.21.tgz#ba9bdc8833ceaf2b5edabbbabfbf9a84040df89a"
