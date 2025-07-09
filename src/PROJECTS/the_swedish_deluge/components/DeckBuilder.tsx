@@ -1,11 +1,11 @@
 // src/PROJECTS/potop_szwedzki_mapa/components/DeckBuilder.tsx
 import React, { useState, useEffect } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useGameStore } from "../store/gameStore";
 import ActionButton from "./ActionButton";
 import Card from "./Card";
 import { Card as CardType } from "../types";
 import { allCards, getNewCardInstance } from "../gameData";
-import { Motion, spring } from "react-motion";
 
 interface DeckBuilderProps {
   scenarioIndex: number;
@@ -23,6 +23,17 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
   const [availableGold, setAvailableGold] = useState(scenario.playerStartingGold);
   const [selectedCards, setSelectedCards] = useState<CardType[]>([]);
   const [availableCards, setAvailableCards] = useState<CardType[]>([]);
+  
+  // Auto-animate refs
+  const [availableCardsRef] = useAutoAnimate<HTMLDivElement>({
+    duration: 300,
+    easing: 'ease-in-out'
+  });
+  
+  const [selectedCardsRef] = useAutoAnimate<HTMLDivElement>({
+    duration: 300,
+    easing: 'ease-out'
+  });
   
   // Initialize available cards
   useEffect(() => {
@@ -74,42 +85,27 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
         <div className="w-1/2 bg-gray-900 bg-opacity-80 p-4 overflow-y-auto">
           <h2 className="text-xl text-white font-bold mb-4">Available Units</h2>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div ref={availableCardsRef} className="grid grid-cols-2 gap-4">
             {availableCards.map((card, index) => (
-              <Motion
+              <div 
                 key={`available-${index}`}
-                defaultStyle={{ scale: 0.8, opacity: 0 }}
-                style={{ 
-                  scale: spring(1, { stiffness: 100, damping: 14 }),
-                  opacity: spring(1, { stiffness: 60, damping: 15 })
-                }}
+                className={`bg-gray-800 rounded-lg p-3 flex flex-col items-center transform transition-all duration-300 ${
+                  card.cost <= availableGold ? 'hover:bg-gray-700 cursor-pointer hover:scale-105' : 'opacity-50 cursor-not-allowed'
+                }`}
+                onClick={() => card.cost <= availableGold && addCardToDeck(card)}
               >
-                {({ scale, opacity }) => (
-                  <div 
-                    style={{ 
-                      transform: `scale(${scale})`, 
-                      opacity,
-                      transition: 'all 0.2s ease-in-out'
-                    }}
-                    className={`bg-gray-800 rounded-lg p-3 flex flex-col items-center ${
-                      card.cost <= availableGold ? 'hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'
-                    }`}
-                    onClick={() => card.cost <= availableGold && addCardToDeck(card)}
-                  >
-                    <Card card={card} />
-                    <div className="mt-2 text-center">
-                      <div className="text-white font-semibold">{card.name}</div>
-                      <div className="text-yellow-400 flex items-center justify-center mt-1">
-                        Cost: {card.cost} 
-                        <span className="ml-1">💰</span>
-                      </div>
-                      {card.cost > availableGold && (
-                        <div className="text-red-400 text-xs mt-1">Not enough gold</div>
-                      )}
-                    </div>
+                <Card card={card} />
+                <div className="mt-2 text-center">
+                  <div className="text-white font-semibold">{card.name}</div>
+                  <div className="text-yellow-400 flex items-center justify-center mt-1">
+                    Cost: {card.cost} 
+                    <span className="ml-1">💰</span>
                   </div>
-                )}
-              </Motion>
+                  {card.cost > availableGold && (
+                    <div className="text-red-400 text-xs mt-1">Not enough gold</div>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -146,33 +142,19 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
                 Select units to add to your deck
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-4">
+              <div ref={selectedCardsRef} className="grid grid-cols-3 gap-4">
                 {selectedCards.map((card, index) => (
-                  <Motion
+                  <div 
                     key={`selected-${index}`}
-                    defaultStyle={{ y: 20, opacity: 0 }}
-                    style={{ 
-                      y: spring(0, { stiffness: 100, damping: 14 }),
-                      opacity: spring(1, { stiffness: 60, damping: 15 })
-                    }}
+                    className="bg-amber-800 rounded-lg p-3 flex flex-col items-center hover:bg-amber-700 cursor-pointer transform transition-all duration-300 hover:scale-105"
+                    onClick={() => removeCardFromDeck(index)}
                   >
-                    {({ y, opacity }) => (
-                      <div 
-                        style={{ 
-                          transform: `translateY(${y}px)`, 
-                          opacity 
-                        }}
-                        className="bg-amber-800 rounded-lg p-3 flex flex-col items-center hover:bg-amber-700 cursor-pointer"
-                        onClick={() => removeCardFromDeck(index)}
-                      >
-                        <div className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                          ✕
-                        </div>
-                        <Card card={card} />
-                        <div className="mt-2 text-white text-sm text-center">{card.name}</div>
-                      </div>
-                    )}
-                  </Motion>
+                    <div className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                      ✕
+                    </div>
+                    <Card card={card} />
+                    <div className="mt-2 text-white text-sm text-center">{card.name}</div>
+                  </div>
                 ))}
               </div>
             )}

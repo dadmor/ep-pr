@@ -1,9 +1,9 @@
 // src/PROJECTS/potop_szwedzki_mapa/components/HistoricalContext.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useGameStore } from "../store/gameStore";
 import ActionButton from "./ActionButton";
 import Card from "./Card";
-import { Motion, spring } from "react-motion";
 import ScenarioMap from "./ScenarioMap";
 
 interface HistoricalContextProps {
@@ -19,6 +19,12 @@ const HistoricalContext: React.FC<HistoricalContextProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const scenario = scenarios[scenarioIndex];
   const history = scenarioHistories[scenarioIndex];
+  
+  // Auto-animate refs
+  const [unitsContainerRef] = useAutoAnimate<HTMLDivElement>({ 
+    duration: 500,
+    easing: 'ease-out'
+  });
   
   // If there's no history data for this scenario, skip to the next step
   useEffect(() => {
@@ -89,25 +95,17 @@ const HistoricalContext: React.FC<HistoricalContextProps> = ({
           {currentPageData.units && currentPageData.units.length > 0 && (
             <div className="absolute bottom-4 right-4 z-30 bg-gray-900 bg-opacity-80 rounded-lg p-4 shadow-lg">
               <h3 className="text-white text-lg font-bold mb-3">Forces Involved</h3>
-              <div className="flex space-x-4 overflow-x-auto pb-2 max-w-2xl">
+              <div 
+                ref={unitsContainerRef}
+                className="flex space-x-4 overflow-x-auto pb-2 max-w-2xl"
+              >
                 {currentPageData.units.map((unit, idx) => (
-                  <Motion
-                    key={`unit-${idx}`}
-                    defaultStyle={{ y: 50, opacity: 0 }}
-                    style={{ 
-                      y: spring(0, { stiffness: 120, damping: 14 }),
-                      opacity: spring(1, { stiffness: 60, damping: 15 })
-                    }}
-                  >
-                    {({ y, opacity }) => (
-                      <div style={{ transform: `translateY(${y}px)`, opacity }}>
-                        <Card card={unit} />
-                        <div className="text-center text-white text-xs mt-1">
-                          {unit.faction}
-                        </div>
-                      </div>
-                    )}
-                  </Motion>
+                  <div key={`unit-${idx}`} className="transform transition-all">
+                    <Card card={unit} />
+                    <div className="text-center text-white text-xs mt-1">
+                      {unit.faction}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

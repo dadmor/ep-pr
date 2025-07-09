@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Scenario, HistoricalArrow, HistoricalIcon } from "../types";
 import { useGameStore } from "../store/gameStore";
-import { Motion, spring } from "react-motion";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 // Map styling constants
 const MAP_CONSTANTS = {
@@ -18,7 +18,7 @@ interface ScenarioMapProps {
   currentIndex: number;
   onSelectScenario: (index: number) => void;
   isAnimating: boolean;
-  // New props for historical elements
+  // Props for historical elements
   historyMode?: boolean;
   historyArrows?: HistoricalArrow[];
   historyIcons?: HistoricalIcon[];
@@ -38,6 +38,17 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [viewBox, setViewBox] = useState("0 0 800 600");
   const { mapData } = useGameStore();
+  
+  // Auto-animate refs for historical elements
+  const [arrowsContainerRef] = useAutoAnimate<SVGGElement>({
+    duration: 800,
+    easing: 'ease-in-out'
+  });
+  
+  const [iconsContainerRef] = useAutoAnimate<SVGGElement>({
+    duration: 500,
+    easing: 'ease-out'
+  });
 
   // Update dimensions on resize
   useEffect(() => {
@@ -128,6 +139,57 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
       }
     }
   }, [currentIndex, dimensions, scenarios, mapData, viewBox]);
+
+  // Draw arrow function
+  const drawArrow = (arrow: HistoricalArrow, progress: number = 1) => {
+    // Draw only the portion of the path based on animation progress
+    const x2 = arrow.start.x + (arrow.end.x - arrow.start.x) * progress;
+    const y2 = arrow.start.y + (arrow.end.y - arrow.start.y) * progress;
+
+    // Arrow head calculations
+    const angle = Math.atan2(y2 - arrow.start.y, x2 - arrow.start.x);
+    const headLength = 15; // Length of arrow head
+
+    return (
+      <>
+        {/* Arrow line */}
+        <line
+          x1={arrow.start.x}
+          y1={arrow.start.y}
+          x2={x2}
+          y2={y2}
+          stroke={arrow.color || "#ff5722"}
+          strokeWidth={4}
+          strokeDasharray={arrow.dashed ? "10,10" : "none"}
+          strokeLinecap="round"
+        />
+
+        {/* Arrow head */}
+        {progress > 0.9 && (
+          <>
+            <line
+              x1={x2}
+              y1={y2}
+              x2={x2 - headLength * Math.cos(angle - Math.PI / 6)}
+              y2={y2 - headLength * Math.sin(angle - Math.PI / 6)}
+              stroke={arrow.color || "#ff5722"}
+              strokeWidth={4}
+              strokeLinecap="round"
+            />
+            <line
+              x1={x2}
+              y1={y2}
+              x2={x2 - headLength * Math.cos(angle + Math.PI / 6)}
+              y2={y2 - headLength * Math.sin(angle + Math.PI / 6)}
+              stroke={arrow.color || "#ff5722"}
+              strokeWidth={4}
+              strokeLinecap="round"
+            />
+          </>
+        )}
+      </>
+    );
+  };
 
   // Render the map
   if (!mapData || scenarios.length === 0) return <div>Loading map...</div>;
@@ -251,181 +313,118 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
           );
         })}
 
-        {/* HISTORICAL ELEMENTS - Now integrated directly in the map */}
+        {/* HISTORICAL ELEMENTS */}
         {historyMode && (
           <>
-            {/* Render historical arrows */}
-            {historyArrows.map((arrow, idx) => (
-              <Motion
-                key={`arrow-${idx}`}
-                defaultStyle={{ progress: 0 }}
-                style={{ progress: spring(1, { stiffness: 60, damping: 15 }) }}
-              >
-                {({ progress }) => {
-                  // Draw only the portion of the path based on animation progress
-                  const x2 =
-                    arrow.start.x + (arrow.end.x - arrow.start.x) * progress;
-                  const y2 =
-                    arrow.start.y + (arrow.end.y - arrow.start.y) * progress;
+            {/* Render historical arrows with auto-animate */}
+            <g ref={arrowsContainerRef}>
+              {historyArrows.map((arrow, idx) => (
+                <g key={`arrow-${idx}`}>
+                  {drawArrow(arrow)}
+                </g>
+              ))}
+            </g>
 
-                  // Arrow head calculations
-                  const angle = Math.atan2(
-                    y2 - arrow.start.y,
-                    x2 - arrow.start.x
-                  );
-                  const headLength = 15; // Length of arrow head
+            {/* Render historical icons with auto-animate */}
+            <g ref={iconsContainerRef}>
+              {historyIcons.map((icon, idx) => (
+                <g
+                  key={`icon-${idx}`}
+                  transform={`translate(${icon.position.x}, ${icon.position.y})`}
+                  className="transition-all duration-500"
+                >
+                  {/* Circle background */}
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="20"
+                    fill={icon.color || "#2196f3"}
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
 
-                  return (
-                    <g>
-                      {/* Arrow line */}
-                      <line
-                        x1={arrow.start.x}
-                        y1={arrow.start.y}
-                        x2={x2}
-                        y2={y2}
-                        stroke={arrow.color || "#ff5722"}
-                        strokeWidth={4}
-                        strokeDasharray={arrow.dashed ? "10,10" : "none"}
-                        strokeLinecap="round"
-                      />
+                  {/* Icon content */}
+                  {icon.type === "infantry" && (
+                    <text
+                      x="0"
+                      y="5"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="14"
+                      fontWeight="bold"
+                    >
+                      👤
+                    </text>
+                  )}
+                  {icon.type === "cavalry" && (
+                    <text
+                      x="0"
+                      y="5"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="14"
+                      fontWeight="bold"
+                    >
+                      🐎
+                    </text>
+                  )}
+                  {icon.type === "artillery" && (
+                    <text
+                      x="0"
+                      y="5"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="14"
+                      fontWeight="bold"
+                    >
+                      💣
+                    </text>
+                  )}
+                  {icon.type === "navy" && (
+                    <text
+                      x="0"
+                      y="5"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="14"
+                      fontWeight="bold"
+                    >
+                      ⚓
+                    </text>
+                  )}
+                  {icon.type === "battle" && (
+                    <text
+                      x="0"
+                      y="5"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="14"
+                      fontWeight="bold"
+                    >
+                      ⚔️
+                    </text>
+                  )}
 
-                      {/* Arrow head */}
-                      {progress > 0.9 && (
-                        <>
-                          <line
-                            x1={x2}
-                            y1={y2}
-                            x2={x2 - headLength * Math.cos(angle - Math.PI / 6)}
-                            y2={y2 - headLength * Math.sin(angle - Math.PI / 6)}
-                            stroke={arrow.color || "#ff5722"}
-                            strokeWidth={4}
-                            strokeLinecap="round"
-                          />
-                          <line
-                            x1={x2}
-                            y1={y2}
-                            x2={x2 - headLength * Math.cos(angle + Math.PI / 6)}
-                            y2={y2 - headLength * Math.sin(angle + Math.PI / 6)}
-                            stroke={arrow.color || "#ff5722"}
-                            strokeWidth={4}
-                            strokeLinecap="round"
-                          />
-                        </>
-                      )}
-                    </g>
-                  );
-                }}
-              </Motion>
-            ))}
-
-            {/* Render historical icons */}
-            {historyIcons.map((icon, idx) => (
-              <Motion
-                key={`icon-${idx}`}
-                defaultStyle={{ scale: 0, opacity: 0 }}
-                style={{
-                  scale: spring(1, { stiffness: 120, damping: 8 }),
-                  opacity: spring(1, { stiffness: 60, damping: 15 }),
-                }}
-              >
-                {({ scale, opacity }) => (
-                  <g
-                    transform={`translate(${icon.position.x}, ${icon.position.y}) scale(${scale})`}
-                    opacity={opacity}
-                  >
-                    {/* Circle background */}
-                    <circle
-                      cx="0"
-                      cy="0"
-                      r="20"
-                      fill={icon.color || "#2196f3"}
-                      stroke="#fff"
-                      strokeWidth="2"
-                    />
-
-                    {/* Icon content (simplified representations) */}
-                    {icon.type === "infantry" && (
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize="14"
-                        fontWeight="bold"
-                      >
-                        👤
-                      </text>
-                    )}
-                    {icon.type === "cavalry" && (
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize="14"
-                        fontWeight="bold"
-                      >
-                        🐎
-                      </text>
-                    )}
-                    {icon.type === "artillery" && (
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize="14"
-                        fontWeight="bold"
-                      >
-                        💣
-                      </text>
-                    )}
-                    {icon.type === "navy" && (
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize="14"
-                        fontWeight="bold"
-                      >
-                        ⚓
-                      </text>
-                    )}
-                    {icon.type === "battle" && (
-                      <text
-                        x="0"
-                        y="5"
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize="14"
-                        fontWeight="bold"
-                      >
-                        ⚔️
-                      </text>
-                    )}
-
-                    {/* Label */}
-                    {icon.label && (
-                      <text
-                        x="0"
-                        y="35"
-                        textAnchor="middle"
-                        fill="white"
-                        fontSize="12"
-                        fontWeight="bold"
-                        stroke="#000"
-                        strokeWidth="4"
-                        strokeLinejoin="round"
-                        paintOrder="stroke"
-                      >
-                        {icon.label}
-                      </text>
-                    )}
-                  </g>
-                )}
-              </Motion>
-            ))}
+                  {/* Label */}
+                  {icon.label && (
+                    <text
+                      x="0"
+                      y="35"
+                      textAnchor="middle"
+                      fill="white"
+                      fontSize="12"
+                      fontWeight="bold"
+                      stroke="#000"
+                      strokeWidth="4"
+                      strokeLinejoin="round"
+                      paintOrder="stroke"
+                    >
+                      {icon.label}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </g>
           </>
         )}
       </svg>
