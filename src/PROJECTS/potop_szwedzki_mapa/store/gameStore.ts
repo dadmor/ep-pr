@@ -1,13 +1,14 @@
-// store/gameStore.ts
+// store/gameStore.ts - Updated with new functionality
 import { create } from "zustand";
-import { Card, GameState, Scenario, MapData } from "../types";
+import { Card, GameState, Scenario, MapData, GameFlow, ScenarioHistory, HistoricalArrow, HistoricalIcon } from "../types";
 import { 
   scenarios, 
   createShuffledDeck, 
   resetCardsAttackStatus, 
   getNewCardInstance,
   calculateDamage,
-  updateCardInArray
+  updateCardInArray,
+  scenarioHistories
 } from "../gameData";
 import {
   WIN_CONDITION,
@@ -15,7 +16,8 @@ import {
   MAX_HAND_SIZE,
   CARD_DRAW_COST,
   INITIAL_HAND_SIZE,
-  MAX_MESSAGES_LOG
+  MAX_MESSAGES_LOG,
+  GAME_FLOW
 } from "../constants";
 
 // Import map data
@@ -56,10 +58,17 @@ const getInitialState = (scenario: Scenario): GameState => ({
   gameStatus: WIN_CONDITION.PLAYING,
   messages: [],
   mapData: mapDataJson as MapData,
+  
+  // New state for the enhanced game flow
+  gameFlow: GAME_FLOW.START_SCREEN,
+  completedScenarios: [], // Indices of completed scenarios
+  scenarioHistories: scenarioHistories,
+  selectedScenarioForHistory: 0,
 });
 
 // Define the store's state and actions
 interface GameStore extends GameState {
+  // Original actions
   drawCard: () => void;
   playCard: (cardId: string) => void;
   selectAttacker: (cardId: string | null) => void;
@@ -72,13 +81,19 @@ interface GameStore extends GameState {
   addMessage: (message: string) => void;
   checkWinConditions: () => void;
   loadMapData: (mapData: MapData) => void;
+  
+  // New actions for enhanced game flow
+  setGameFlow: (flow: GameFlow) => void;
+  selectScenarioForHistory: (index: number) => void;
+  markScenarioCompleted: (scenarioIndex: number) => void;
+  customizeDeck: (scenarioIndex: number, customCards: Card[]) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
   // --- Initial State ---
   ...getInitialState(scenarios[0]),
 
-  // --- Actions ---
+  // --- Original Actions ---
   addMessage: (message: string) => {
     set((state) => {
       const newMessages = [...state.messages, message];
@@ -324,6 +339,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
           newState.player.playArea,
           newState.opponent.playArea
         );
+        
+        // If player wins, mark scenario as completed
+        if (gameStatus === WIN_CONDITION.PLAYER_WINS) {
+          get().markScenarioCompleted(state.currentScenarioIndex);
+        }
+        
         return { ...newState, gameStatus };
       } else {
         const updatedOpponentPlayArea = updateCardInArray(
@@ -455,6 +476,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   resetGame: () => {
     get().loadScenario(0);
+    set({ gameFlow: GAME_FLOW.START_SCREEN });
   },
 
   checkWinConditions: () => {
@@ -472,9 +494,55 @@ export const useGameStore = create<GameStore>((set, get) => ({
             ? "Opponent has no cards left on the table. Player wins!"
             : "Player has no cards left on the table. Opponent wins!"
         );
+        
+        // If player wins, mark scenario as completed
+        if (gameStatus === WIN_CONDITION.PLAYER_WINS) {
+          get().markScenarioCompleted(state.currentScenarioIndex);
+        }
       }
 
       return { gameStatus };
     });
   },
+
+  // --- New Actions for Enhanced Game Flow ---
+  
+  setGameFlow: (flow: GameFlow) => {
+    set({ gameFlow: flow });
+  },
+  
+  selectScenarioForHistory: (index: number) => {
+    set({ 
+      selectedScenarioForHistory: index,
+      gameFlow: GAME_FLOW.HISTORICAL_CONTEXT
+    });
+  },
+  
+  markScenarioCompleted: (scenarioIndex: number) => {
+    set(state => {
+      if (state.completedScenarios.includes(scenarioIndex)) {
+        return {}; // Already completed
+      }
+      return {
+        completedScenarios: [...state.completedScenarios, scenarioIndex]
+      };
+    });
+  },
+  
+  customizeDeck: (scenarioIndex: number, customCards: Card[]) => {
+    // This function replaces the player's starting cards with the customized deck
+    set(state => {
+      // Create new player with custom cards
+      const updatedPlayer = {
+        ...state.player,
+        playArea: customCards.map(getNewCardInstance),
+        deck: createShuffledDeck(customCards)
+      };
+      
+      return {
+        player: updatedPlayer,
+        gameFlow: GAME_FLOW.GAME_SCREEN
+      };
+    });
+  }
 }));

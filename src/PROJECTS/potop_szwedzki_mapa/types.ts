@@ -1,4 +1,4 @@
-// types.ts
+// types.ts - Updated with new types
 export interface Card {
   id: string;
   name: string;
@@ -9,6 +9,7 @@ export interface Card {
   cost: number;
   goldValue: number;
   hasAttacked: boolean;
+  faction?: string; // Added for historical context
 }
 
 export interface Player {
@@ -57,8 +58,48 @@ export interface Scenario {
   playerStartingGold: number;
   opponentStartingGold: number;
   cityId: number; // ID miasta z mapy, na którym ma być wycentrowany widok
+  description?: string; // Brief description for the scenario selection screen
 }
 
+// New types for enhanced game flow
+export type GameFlow = 
+  | 'startScreen' 
+  | 'historicalContext' 
+  | 'deckBuilder' 
+  | 'gameScreen';
+
+// Historical context types
+export interface HistoricalArrow {
+  start: Point;
+  end: Point;
+  color?: string;
+  dashed?: boolean;
+  width?: number;
+}
+
+export interface HistoricalIcon {
+  position: Point;
+  type: 'infantry' | 'cavalry' | 'artillery' | 'navy' | 'battle';
+  color?: string;
+  label?: string;
+  size?: number;
+}
+
+export interface HistoricalPage {
+  title: string;
+  text: string;
+  date?: string;
+  arrows?: HistoricalArrow[];
+  icons?: HistoricalIcon[];
+  units?: Card[]; // Units involved in this historical moment
+}
+
+export interface ScenarioHistory {
+  scenarioId: number;
+  pages: HistoricalPage[];
+}
+
+// Main game state interface
 export interface GameState {
   player: Player;
   opponent: Player;
@@ -69,4 +110,10 @@ export interface GameState {
   gameStatus: 'playing' | 'playerWins' | 'opponentWins';
   messages: string[];
   mapData: MapData | null;
+  
+  // New state properties for enhanced game flow
+  gameFlow: GameFlow;
+  completedScenarios: number[]; // Indices of completed scenarios
+  scenarioHistories: ScenarioHistory[];
+  selectedScenarioForHistory: number;
 }

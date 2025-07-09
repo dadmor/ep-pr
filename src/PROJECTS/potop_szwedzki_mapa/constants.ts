@@ -1,6 +1,4 @@
-// constants.ts
-// Game-related constant values
-
+// constants.ts - Updated with new constants
 // Card drawing constraints
 export const MAX_HAND_SIZE = 5;
 export const CARD_DRAW_COST = 1;
@@ -44,3 +42,11 @@ export const INITIAL_HAND_SIZE = 3;
 
 // Game mechanics
 export const ATTACK_LUNGE_DISTANCE = 0.3; // 30% of the way to target
+
+// Game flow states
+export const GAME_FLOW = {
+  START_SCREEN: 'startScreen',
+  HISTORICAL_CONTEXT: 'historicalContext',
+  DECK_BUILDER: 'deckBuilder',
+  GAME_SCREEN: 'gameScreen',
+} as const;
