@@ -1,6 +1,8 @@
 // src/PROJECTS/potop_szwedzki_mapa/context/AnimationContext.tsx
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { Card as CardType } from '../types';
+import { useGameStore } from '../store/gameStore';
 
 interface AnimationContextType {
   // Animation state
@@ -8,14 +10,13 @@ interface AnimationContextType {
   setIsAnimating: (isAnimating: boolean) => void;
   
   // Auto-animate hook for container animations
-  // Changed from RefObject to RefCallback to match useAutoAnimate's return type
   autoAnimateRef: React.RefCallback<Element>;
   
   // Card references for attack animations
   registerCardRef: (cardId: string, element: HTMLElement | null) => void;
   getCardRef: (cardId: string) => HTMLElement | undefined;
   
-  // Essential animation methods we want to keep
+  // Essential animation methods
   animateAttack: (
     attackerId: string, 
     targetId: string,
@@ -33,6 +34,26 @@ interface AnimationContextType {
     message: string,
     type?: 'success' | 'warning' | 'info',
     onComplete?: () => void
+  ) => void;
+
+  // New animation methods moved from main component
+  animateCardDraw: (
+    deckRef: React.RefObject<HTMLDivElement>,
+    onComplete?: () => void
+  ) => void;
+
+  animateCardPlay: (
+    cardId: string,
+    onComplete?: () => void
+  ) => void;
+
+  executeOpponentTurn: () => void;
+  
+  handleOpponentAttacks: () => void;
+  
+  executeNextAttack: (
+    attackers: CardType[], 
+    index: number
   ) => void;
 }
 
@@ -62,7 +83,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [autoAnimateRef] = useAutoAnimate(); // Create auto-animate ref
   const { registerCardRef, getCardRef } = useCardRefs();
   
-  // Keep essential attack animation
+  // Animation for attacking
   const animateAttack = useCallback((
     attackerId: string,
     targetId: string,
@@ -110,7 +131,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, 150);
   }, [getCardRef]);
   
-  // Keep essential damage animation
+  // Animation for damage
   const animateDamage = useCallback((
     targetId: string,
     damage: number,
@@ -210,7 +231,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, 400);
   }, [getCardRef]);
   
-  // Simplified notification system
+  // Notification system
   const showNotification = useCallback((
     message: string,
     type: 'success' | 'warning' | 'info' = 'info',
@@ -268,6 +289,194 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
     }, 1500);
   }, []);
+
+  // New animation for drawing a card (moved from main component)
+  const animateCardDraw = useCallback((
+    deckRef: React.RefObject<HTMLDivElement>,
+    onComplete?: () => void
+  ) => {
+    setIsAnimating(true);
+    
+    // If deck reference is available, animate card draw
+    if (deckRef.current) {
+      // Create temporary invisible card element for the animation
+      const tempCard = document.createElement('div');
+      tempCard.className = 'card-back bg-purple-800 rounded-lg shadow-lg';
+      tempCard.style.width = '128px';
+      tempCard.style.height = '192px';
+      tempCard.style.position = 'absolute';
+      
+      const deckRect = deckRef.current.getBoundingClientRect();
+      tempCard.style.top = `${deckRect.top}px`;
+      tempCard.style.left = `${deckRect.left}px`;
+      tempCard.style.zIndex = '1000';
+      tempCard.style.pointerEvents = 'none';
+      
+      document.body.appendChild(tempCard);
+      
+      // Simple animation using Web Animations API
+      const animation = tempCard.animate(
+        [
+          { top: `${deckRect.top}px`, left: `${deckRect.left}px`, opacity: 1, transform: 'scale(1)' },
+          { top: `${deckRect.top - 50}px`, left: `${deckRect.left + 100}px`, opacity: 0.8, transform: 'scale(0.9)' }
+        ],
+        { duration: 400, easing: 'ease-in-out' }
+      );
+      
+      animation.onfinish = () => {
+        document.body.removeChild(tempCard);
+        
+        // Execute game logic after animation
+        useGameStore.getState().drawCard();
+        
+        showNotification('Card drawn', 'info', () => {
+          setIsAnimating(false);
+          if (onComplete) onComplete();
+        });
+      };
+    } else {
+      // Fallback if refs aren't available
+      useGameStore.getState().drawCard();
+      showNotification('Card drawn', 'info', () => {
+        setIsAnimating(false);
+        if (onComplete) onComplete();
+      });
+    }
+  }, [showNotification]);
+
+  // Animation for playing a card
+  const animateCardPlay = useCallback((
+    cardId: string,
+    onComplete?: () => void
+  ) => {
+    const card = useGameStore.getState().player.hand.find(c => c.id === cardId);
+    
+    if (!card) {
+      if (onComplete) onComplete();
+      setIsAnimating(false);
+      return;
+    }
+    
+    setIsAnimating(true);
+    
+    // Use a small delay for visual feedback
+    setTimeout(() => {
+      useGameStore.getState().playCard(cardId);
+      showNotification(`Played ${card.name} for ${card.cost} gold`, 'info', () => {
+        setIsAnimating(false);
+        if (onComplete) onComplete();
+      });
+    }, 200);
+  }, [showNotification]);
+
+  // Execute opponent's turn
+  const executeOpponentTurn = useCallback(() => {
+    // Get current game state
+    const currentState = useGameStore.getState();
+    
+    // 1. Play a card if possible
+    const playableCards = currentState.opponent.deck
+      .filter(card => card.cost <= currentState.opponent.gold)
+      .sort((a, b) => b.attack - a.attack);
+      
+    if (playableCards.length > 0 && currentState.opponent.playArea.length < 5 && currentState.opponent.gold >= playableCards[0].cost) {
+      const cardToPlay = playableCards[0];
+      
+      // Play the card with a small delay for animation
+      setTimeout(() => {
+        useGameStore.getState().opponentPlayCard(cardToPlay.name);
+        showNotification(`Opponent played ${cardToPlay.name}`, 'warning', () => {
+          // Continue with attack phase after playing card
+          handleOpponentAttacks();
+        });
+      }, 500);
+    } else {
+      // No card played, proceed to attacks
+      handleOpponentAttacks();
+    }
+  }, []);
+  
+  // Handle opponent attacks
+  const handleOpponentAttacks = useCallback(() => {
+    // Get current game state
+    const currentState = useGameStore.getState();
+    const attackers = currentState.opponent.playArea.filter(card => !card.hasAttacked);
+    
+    if (attackers.length === 0 || currentState.player.playArea.length === 0) {
+      // No available attackers or targets, end turn
+      showNotification("Opponent's turn ends", 'info', () => {
+        useGameStore.getState().endTurn();
+        setIsAnimating(false);
+      });
+      return;
+    }
+    
+    // Execute attacks one by one with animations
+    executeNextAttack(attackers, 0);
+  }, []);
+  
+  // Execute opponent attacks one by one
+  const executeNextAttack = useCallback((attackers: CardType[], index: number) => {
+    // Always get the latest game state
+    const currentState = useGameStore.getState();
+    
+    if (index >= attackers.length || currentState.player.playArea.length === 0) {
+      // All attacks completed or no more targets, end turn
+      showNotification("Opponent's turn ends", 'info', () => {
+        useGameStore.getState().endTurn();
+        setIsAnimating(false);
+      });
+      return;
+    }
+    
+    const attacker = attackers[index];
+    
+    // Find best target (lowest HP)
+    const targets = [...currentState.player.playArea].sort((a, b) => a.hp - b.hp);
+    if (targets.length === 0) {
+      showNotification("Opponent's turn ends", 'info', () => {
+        useGameStore.getState().endTurn();
+        setIsAnimating(false);
+      });
+      return;
+    }
+    
+    const target = targets[0];
+    
+    // Calculate damage for animation
+    const damage = Math.max(0, attacker.attack - target.armor);
+    
+    // Show notification before attack
+    showNotification(`Opponent's ${attacker.name} attacks your ${target.name}`, 'warning', () => {
+      // Animate the attack
+      animateAttack(attacker.id, target.id, damage, () => {
+        // Update game state after animation completes
+        useGameStore.getState().opponentAttack(attacker.id, target.id);
+        
+        // Check if player was defeated
+        const updatedState = useGameStore.getState();
+        if (updatedState.gameStatus === 'opponentWins') {
+          showNotification('You have been defeated!', 'warning', () => {
+            setIsAnimating(false);
+          });
+          return;
+        }
+        
+        // Check if target was defeated
+        const targetStillExists = updatedState.player.playArea.some(card => card.id === target.id);
+        
+        if (!targetStillExists) {
+          showNotification(`Your ${target.name} was defeated!`, 'warning', () => {
+            // Continue with next attack
+            executeNextAttack(attackers, index + 1);
+          });
+        } else {
+          // Target survived, continue with next attack
+          executeNextAttack(attackers, index + 1);
+        }
+      });
+    });
+  }, [animateAttack, showNotification]);
   
   const value = {
     isAnimating,
@@ -277,7 +486,12 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     getCardRef,
     animateAttack,
     animateDamage,
-    showNotification
+    showNotification,
+    animateCardDraw,
+    animateCardPlay,
+    executeOpponentTurn,
+    handleOpponentAttacks,
+    executeNextAttack
   };
   
   return (
