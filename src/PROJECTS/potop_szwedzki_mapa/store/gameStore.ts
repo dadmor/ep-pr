@@ -1,6 +1,6 @@
 // store/gameStore.ts
 import { create } from "zustand";
-import { Card, GameState, Scenario } from "../types";
+import { Card, GameState, Scenario, MapData } from "../types";
 import { 
   allCards, 
   scenarios, 
@@ -18,6 +18,9 @@ import {
   INITIAL_HAND_SIZE,
   MAX_MESSAGES_LOG
 } from "../constants";
+
+// Import map data
+import mapDataJson from '../assets/mapa.json';
 
 // Check win conditions based on cards in play
 const checkWinConditions = (
@@ -53,6 +56,7 @@ const getInitialState = (scenario: Scenario): GameState => ({
   currentScenarioIndex: 0,
   gameStatus: WIN_CONDITION.PLAYING,
   messages: [],
+  mapData: mapDataJson as MapData,
 });
 
 // Define the store's state and actions
@@ -68,6 +72,7 @@ interface GameStore extends GameState {
   resetGame: () => void;
   addMessage: (message: string) => void;
   checkWinConditions: () => void;
+  loadMapData: (mapData: MapData) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -83,6 +88,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
           newMessages.length > MAX_MESSAGES_LOG ? newMessages.slice(-MAX_MESSAGES_LOG) : newMessages,
       };
     });
+  },
+
+  loadMapData: (mapData: MapData) => {
+    set(() => ({ mapData }));
   },
 
   loadScenario: (scenarioIndex: number) => {

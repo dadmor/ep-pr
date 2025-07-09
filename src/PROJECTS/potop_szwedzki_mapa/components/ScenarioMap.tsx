@@ -1,12 +1,15 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Scenario } from "../types";
+import { Scenario, MapData, City } from "../types";
+import { useGameStore } from "../store/gameStore";
 
 // Map styling constants
 const MAP_CONSTANTS = {
   CIRCLE_SIZE_FACTOR: 0.75,
   NODE_RADIUS_FACTOR: 0.12,
   PATH_STROKE_WIDTH: 2,
-  PATH_OPACITY: 0.7
+  PATH_OPACITY: 0.7,
+  ZOOM_FACTOR: 1.5, // Zoom factor when focusing on a city
+  ZOOM_TRANSITION: 800 // Transition time in ms
 };
 
 interface ScenarioMapProps {
@@ -25,8 +28,10 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [viewBox, setViewBox] = useState("0 0 800 600");
+  const { mapData } = useGameStore();
   
-  // Update dimensions on resize and scroll map to center current scenario
+  // Update dimensions on resize
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -47,28 +52,72 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
   
-  // Center map on current scenario
+  // Center map on current scenario city
   useEffect(() => {
-    if (svgRef.current && dimensions.width > 0 && scenarios.length > 0) {
-      // Get the position of the current scenario
-      const currentPosition = getCirclePosition(currentIndex, scenarios.length);
+    if (
+      svgRef.current && 
+      dimensions.width > 0 && 
+      scenarios.length > 0 && 
+      mapData && 
+      mapData.cities.length > 0
+    ) {
+      // Get the city ID from the current scenario
+      const currentScenario = scenarios[currentIndex];
+      const cityId = currentScenario?.cityId;
       
-      // Get SVG viewport dimensions
-      const svgElement = svgRef.current;
+      // Find the city in map data
+      const city = mapData.cities.find(c => c.id === cityId);
       
-      // Center the view on the current scenario
-      const centerX = dimensions.width / 2;
-      const centerY = dimensions.height / 2;
-      
-      // Only apply centering if we have a valid current scenario
-      if (currentPosition && currentIndex >= 0) {
-        // No need to adjust viewBox, as we're using preserveAspectRatio="xMidYMid meet"
-        // The current scenario is already centered in our coordinate system
+      if (city) {
+        // Center and zoom on the city
+        const { width, height } = mapData.mapSize;
+        const zoomedWidth = width / MAP_CONSTANTS.ZOOM_FACTOR;
+        const zoomedHeight = height / MAP_CONSTANTS.ZOOM_FACTOR;
+        
+        // Calculate the new viewBox
+        const x = Math.max(0, city.position.x - zoomedWidth / 2);
+        const y = Math.max(0, city.position.y - zoomedHeight / 2);
+        
+        // Adjust to keep within map bounds
+        const adjustedX = Math.min(x, width - zoomedWidth);
+        const adjustedY = Math.min(y, height - zoomedHeight);
+        
+        // Set new viewBox with transition
+        const newViewBox = `${adjustedX} ${adjustedY} ${zoomedWidth} ${zoomedHeight}`;
+        
+        // Transition viewBox animation
+        const startTime = Date.now();
+        const endTime = startTime + MAP_CONSTANTS.ZOOM_TRANSITION;
+        
+        // Parse current viewBox
+        const currentViewBox = viewBox.split(' ').map(Number);
+        const [startX, startY, startWidth, startHeight] = currentViewBox;
+        
+        const animateViewBox = () => {
+          const now = Date.now();
+          if (now >= endTime) {
+            setViewBox(newViewBox);
+            return;
+          }
+          
+          const progress = (now - startTime) / MAP_CONSTANTS.ZOOM_TRANSITION;
+          const easeProgress = 0.5 - Math.cos(progress * Math.PI) / 2; // Smooth easing
+          
+          const currentX = startX + (adjustedX - startX) * easeProgress;
+          const currentY = startY + (adjustedY - startY) * easeProgress;
+          const currentWidth = startWidth + (zoomedWidth - startWidth) * easeProgress;
+          const currentHeight = startHeight + (zoomedHeight - startHeight) * easeProgress;
+          
+          setViewBox(`${currentX} ${currentY} ${currentWidth} ${currentHeight}`);
+          requestAnimationFrame(animateViewBox);
+        };
+        
+        requestAnimationFrame(animateViewBox);
       }
     }
-  }, [currentIndex, dimensions, scenarios.length]);
+  }, [currentIndex, dimensions, scenarios, mapData]);
   
-  // Get circle parameters based on container size
+  // Calculate positions for scenario nodes in a circle
   const getCircleParams = () => {
     const { width, height } = dimensions;
     const size = Math.min(width, height) * MAP_CONSTANTS.CIRCLE_SIZE_FACTOR;
@@ -79,7 +128,7 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
     return { centerX, centerY, radius };
   };
   
-  // Calculate positions in a circle
+  // Calculate position for a scenario node
   const getCirclePosition = (index: number, total: number) => {
     const { centerX, centerY, radius } = getCircleParams();
     const nodeRadius = radius * MAP_CONSTANTS.NODE_RADIUS_FACTOR;
@@ -94,9 +143,8 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
     };
   };
   
-  // Map background elements - mountains, forests, etc.
-  
-  if (scenarios.length === 0) return <div>Loading map...</div>;
+  // Render the map
+  if (!mapData || scenarios.length === 0) return <div>Loading map...</div>;
   
   return (
     <div className="w-full h-full" ref={containerRef}>
@@ -105,76 +153,138 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
         width="100%"
         height="100%"
         className="w-full h-full"
-        viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+        viewBox={viewBox}
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Main Path Circle Highlight - more visible */}
-        {dimensions.width > 0 && (
-          <circle
-            cx={getCircleParams().centerX}
-            cy={getCircleParams().centerY}
-            r={getCircleParams().radius}
-            fill="none"
-            stroke="#9ca3af"
-            strokeWidth={MAP_CONSTANTS.PATH_STROKE_WIDTH}
-            strokeDasharray="5,5"
-            opacity={MAP_CONSTANTS.PATH_OPACITY}
+        {/* Render provinces */}
+        {mapData.provinces.map(province => (
+          <path
+            key={`province-${province.id}`}
+            d={province.path.map((pt, i) => 
+              `${i === 0 ? 'M' : 'L'}${pt.x},${pt.y}`
+            ).join(' ') + 'Z'}
+            fill="#3BAF4B"
+            stroke={province.color}
+            strokeWidth={3}
+            opacity={0.7}
           />
-        )}
+        ))}
         
-        {/* Render scenario nodes */}
-        {scenarios.map((scenario, index) => {
-          if (dimensions.width === 0) return null;
-          
-          const position = getCirclePosition(index, scenarios.length);
-          const isCurrentScenario = index === currentIndex;
+        {/* Render cities */}
+        {mapData.cities.map(city => {
+          const isScenarioCity = scenarios.some(s => s.cityId === city.id);
+          const isCurrentCity = scenarios[currentIndex]?.cityId === city.id;
           
           return (
-            <g key={`scenario-${index}`}>
-              {/* Scenario Node */}
+            <g key={`city-${city.id}`}>
+              {/* City shadow */}
               <circle
-                cx={position.x}
-                cy={position.y}
-                r={position.nodeRadius}
-                fill={isCurrentScenario ? "#4f46e5" : "#6b7280"}
-                stroke={isCurrentScenario ? "#c7d2fe" : "#9ca3af"}
-                strokeWidth={isCurrentScenario ? 3 : 1}
-                className={!isAnimating ? "cursor-pointer hover:stroke-white transition-colors" : ""}
-                onClick={() => !isAnimating && onSelectScenario(index)}
+                cx={city.position.x + 2}
+                cy={city.position.y + 4}
+                r={city.size}
+                fill="rgba(0,0,0,0.4)"
+                opacity={0.7}
               />
               
-              {/* Scenario Label */}
-              <text
-                x={position.x}
-                y={position.y}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="white"
-                fontSize={position.nodeRadius * 0.7}
-                fontWeight={isCurrentScenario ? "bold" : "normal"}
-                pointerEvents="none"
-              >
-                {index + 1}
-              </text>
+              {/* City base */}
+              <circle
+                cx={city.position.x}
+                cy={city.position.y}
+                r={city.size}
+                fill="#F8F8F8"
+                stroke={city.color}
+                strokeWidth={3}
+                className={isScenarioCity ? "cursor-pointer" : ""}
+                onClick={() => {
+                  // Find scenario index for this city
+                  const scenarioIndex = scenarios.findIndex(s => s.cityId === city.id);
+                  if (scenarioIndex !== -1 && !isAnimating) {
+                    onSelectScenario(scenarioIndex);
+                  }
+                }}
+              />
               
-              {/* Scenario Name Tooltip */}
+              {/* Inner circle */}
+              <circle
+                cx={city.position.x}
+                cy={city.position.y}
+                r={city.size * 0.6}
+                fill={city.color}
+              />
+              
+              {/* City glow for current scenario */}
+              {isCurrentCity && (
+                <circle
+                  cx={city.position.x}
+                  cy={city.position.y}
+                  r={city.size + 10}
+                  fill="none"
+                  stroke="#FFD700"
+                  strokeWidth={2}
+                  opacity={0.8}
+                  strokeDasharray="5,5"
+                >
+                  <animate 
+                    attributeName="r" 
+                    values={`${city.size + 5};${city.size + 15};${city.size + 5}`}
+                    dur="3s" 
+                    repeatCount="indefinite" 
+                  />
+                  <animate 
+                    attributeName="opacity" 
+                    values="0.3;0.8;0.3" 
+                    dur="3s" 
+                    repeatCount="indefinite" 
+                  />
+                </circle>
+              )}
+              
+              {/* City label */}
               <text
-                x={position.x}
-                y={position.y - position.nodeRadius * 1.5}
+                x={city.position.x}
+                y={city.position.y + city.size + 15}
                 textAnchor="middle"
-                dominantBaseline="middle"
                 fill="white"
-                fontSize={isCurrentScenario ? 14 : 12}
-                fontWeight={isCurrentScenario ? "bold" : "normal"}
-                opacity={isCurrentScenario ? 1 : 0.7}
-                pointerEvents="none"
-                className="drop-shadow-md"
+                fontSize={12}
+                fontWeight={isCurrentCity ? "bold" : "normal"}
+                stroke="#000"
+                strokeWidth={0.5}
+                paintOrder="stroke"
               >
-                {scenario.name}
+                {city.name}
               </text>
             </g>
           );
         })}
+        
+        {/* Map legend */}
+        <g transform={`translate(20, ${mapData.mapSize.height - 60})`}>
+          <rect
+            x={0}
+            y={0}
+            width={180}
+            height={50}
+            fill="rgba(0,0,0,0.5)"
+            rx={5}
+          />
+          <text
+            x={10}
+            y={20}
+            fill="white"
+            fontSize={12}
+          >
+            Current scenario:
+          </text>
+          <text
+            x={10}
+            y={40}
+            fill="#FFD700"
+            fontSize={14}
+            fontWeight="bold"
+          >
+            {scenarios[currentIndex]?.name || "None"}
+          </text>
+        </g>
       </svg>
     </div>
   );

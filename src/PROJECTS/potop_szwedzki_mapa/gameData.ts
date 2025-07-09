@@ -86,6 +86,7 @@ export const scenarios: Scenario[] = [
     startingPlayer: TURN_TYPE.PLAYER,
     playerStartingGold: 5,
     opponentStartingGold: 3,
+    cityId: 1, // Warszawa
   },
   {
     name: "Reinforcements",
@@ -100,7 +101,40 @@ export const scenarios: Scenario[] = [
     startingPlayer: TURN_TYPE.OPPONENT,
     playerStartingGold: 7,
     opponentStartingGold: 6,
+    cityId: 2, // Kraków
   },
+  {
+    name: "Northern Front",
+    playerStartingCards: [
+      getNewCardInstance(allCards[0]), // Knight
+      getNewCardInstance(allCards[2]), // Defender
+    ],
+    opponentStartingCards: [
+      getNewCardInstance(allCards[1]), // Archer
+      getNewCardInstance(allCards[3]), // Goblin
+      getNewCardInstance(allCards[3]), // Goblin
+    ],
+    startingPlayer: TURN_TYPE.PLAYER,
+    playerStartingGold: 6,
+    opponentStartingGold: 4,
+    cityId: 4, // Gdańsk
+  },
+  {
+    name: "Western Assault",
+    playerStartingCards: [
+      getNewCardInstance(allCards[1]), // Archer
+      getNewCardInstance(allCards[1]), // Archer
+      getNewCardInstance(allCards[3]), // Goblin
+    ],
+    opponentStartingCards: [
+      getNewCardInstance(allCards[0]), // Knight
+      getNewCardInstance(allCards[2]), // Defender
+    ],
+    startingPlayer: TURN_TYPE.OPPONENT,
+    playerStartingGold: 8,
+    opponentStartingGold: 5,
+    cityId: 3, // Poznań
+  }
 ];
 
 // Helper function to create a shuffled deck, excluding cards already in play

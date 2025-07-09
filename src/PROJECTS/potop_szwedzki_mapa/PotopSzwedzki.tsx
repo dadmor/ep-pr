@@ -54,6 +54,7 @@ const GameWithAnimations = () => {
     selectAttacker,
     resetGame,
     addMessage,
+    mapData
   } = useGameStore();
 
   const {
@@ -242,6 +243,18 @@ const GameWithAnimations = () => {
     }
   };
 
+  // Show loading state if map data is not available
+  if (!mapData) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-800 text-white">
+        <div className="text-center">
+          <h2 className="text-xl mb-4">Loading map data...</h2>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-screen bg-amber-50 text-white overflow-hidden flex flex-col">
       {/* Fullscreen Scenario Map Background */}
@@ -253,14 +266,14 @@ const GameWithAnimations = () => {
           isAnimating={isAnimating}
         />
       </div>
-      <div className="fixed top-0 right-0 p-4">
+      <div className="fixed top-0 right-0 p-4 z-10">
         <GameInfo
           onNextScenario={handleNextScenario}
           onResetGame={handleResetGame}
         />
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex-col space-y-4 mt-2">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex-col space-y-4 mt-2 z-10">
         <PlayArea
           cards={opponent.playArea}
           isOpponent={true}
@@ -280,14 +293,14 @@ const GameWithAnimations = () => {
           canTarget={false}
         />
       </div>
-      <div className="px-6 ">
+      <div className="px-6 z-10">
         <Hand
           hand={player.hand}
           onCardClick={handleCardInHandClick}
           gold={player.gold}
         />
       </div>
-      <div className="fixed bottom-0 right-0 flex flex-col justify-center p-4 gap-2">
+      <div className="fixed bottom-0 right-0 flex flex-col justify-center p-4 gap-2 z-10">
         <ActionButton
           onClick={handleDrawCard}
           disabled={
