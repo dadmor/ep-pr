@@ -1,85 +1,85 @@
 {
-    "provinces": [
-      {
-        "id": 1,
-        "name": "Mazowsze",
-        "path": [
-          {"x": 300, "y": 200},
-          {"x": 400, "y": 180},
-          {"x": 450, "y": 240},
-          {"x": 420, "y": 300},
-          {"x": 320, "y": 310}
-        ],
-        "color": "#FF6B6B"
-      },
-      {
-        "id": 2,
-        "name": "Małopolska",
-        "path": [
-          {"x": 420, "y": 300},
-          {"x": 450, "y": 240},
-          {"x": 530, "y": 260},
-          {"x": 520, "y": 350},
-          {"x": 450, "y": 380}
-        ],
-        "color": "#4ECDC4"
-      },
-      {
-        "id": 3,
-        "name": "Wielkopolska",
-        "path": [
-          {"x": 300, "y": 200},
-          {"x": 200, "y": 180},
-          {"x": 180, "y": 250},
-          {"x": 240, "y": 280},
-          {"x": 320, "y": 310}
-        ],
-        "color": "#45B7D1"
-      },
-      {
-        "id": 4,
-        "name": "Pomorze",
-        "path": [
-          {"x": 200, "y": 180},
-          {"x": 300, "y": 200},
-          {"x": 280, "y": 120},
-          {"x": 180, "y": 100}
-        ],
-        "color": "#96CEB4"
-      }
-    ],
-    "cities": [
-      {
-        "id": 1,
-        "name": "Warszawa",
-        "position": {"x": 360, "y": 250},
-        "size": 25,
-        "color": "#FF6B6B"
-      },
-      {
-        "id": 2,
-        "name": "Kraków",
-        "position": {"x": 470, "y": 330},
-        "size": 22,
-        "color": "#4ECDC4"
-      },
-      {
-        "id": 3,
-        "name": "Poznań",
-        "position": {"x": 250, "y": 240},
-        "size": 20,
-        "color": "#45B7D1"
-      },
-      {
-        "id": 4,
-        "name": "Gdańsk",
-        "position": {"x": 240, "y": 130},
-        "size": 18,
-        "color": "#96CEB4"
-      }
-    ],
-    "mapSize": {
-      "width": 800,
-      "height": 600
+  "provinces": [
+    {
+      "id": 1,
+      "name": "Mazowsze",
+      "path": [
+        {"x": 300, "y": 200},
+        {"x": 400, "y": 180},
+        {"x": 450, "y": 240},
+        {"x": 420, "y": 300},
+        {"x": 320, "y": 310}
+      ],
+      "color": "#FF6B6B"
+    },
+    {
+      "id": 2,
+      "name": "Małopolska",
+      "path": [
+        {"x": 420, "y": 300},
+        {"x": 450, "y": 240},
+        {"x": 530, "y": 260},
+        {"x": 520, "y": 350},
+        {"x": 450, "y": 380}
+      ],
+      "color": "#4ECDC4"
+    },
+    {
+      "id": 3,
+      "name": "Wielkopolska",
+      "path": [
+        {"x": 300, "y": 200},
+        {"x": 200, "y": 180},
+        {"x": 180, "y": 250},
+        {"x": 240, "y": 280},
+        {"x": 320, "y": 310}
+      ],
+      "color": "#45B7D1"
+    },
+    {
+      "id": 4,
+      "name": "Pomorze",
+      "path": [
+        {"x": 200, "y": 180},
+        {"x": 300, "y": 200},
+        {"x": 280, "y": 120},
+        {"x": 180, "y": 100}
+      ],
+      "color": "#96CEB4"
     }
+  ],
+  "cities": [
+    {
+      "id": 1,
+      "name": "Warszawa",
+      "position": {"x": 360, "y": 250},
+      "size": 25,
+      "color": "#FF6B6B"
+    },
+    {
+      "id": 2,
+      "name": "Kraków",
+      "position": {"x": 470, "y": 330},
+      "size": 22,
+      "color": "#4ECDC4"
+    },
+    {
+      "id": 3,
+      "name": "Poznań",
+      "position": {"x": 250, "y": 240},
+      "size": 20,
+      "color": "#45B7D1"
+    },
+    {
+      "id": 4,
+      "name": "Gdańsk",
+      "position": {"x": 240, "y": 130},
+      "size": 18,
+      "color": "#96CEB4"
+    }
+  ],
+  "mapSize": {
+    "width": 800,
+    "height": 600
   }
+}

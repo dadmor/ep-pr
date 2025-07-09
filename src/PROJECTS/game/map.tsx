@@ -146,7 +146,7 @@ export default function ProvinceMapEditor() {
   const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4"];
 
   // Helper function to snap a value to the nearest pixel
-  const snapToPixel = (value) => {
+  const snapToPixel = (value: number) => {
     if (!pixelPerfect) return value;
     return Math.round(value);
   };

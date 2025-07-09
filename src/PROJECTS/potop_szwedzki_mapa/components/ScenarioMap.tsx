@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Scenario, MapData, City } from "../types";
+import { Scenario } from "../types";
 import { useGameStore } from "../store/gameStore";
 
 // Map styling constants
@@ -116,32 +116,6 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
       }
     }
   }, [currentIndex, dimensions, scenarios, mapData]);
-  
-  // Calculate positions for scenario nodes in a circle
-  const getCircleParams = () => {
-    const { width, height } = dimensions;
-    const size = Math.min(width, height) * MAP_CONSTANTS.CIRCLE_SIZE_FACTOR;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = size / 2;
-    
-    return { centerX, centerY, radius };
-  };
-  
-  // Calculate position for a scenario node
-  const getCirclePosition = (index: number, total: number) => {
-    const { centerX, centerY, radius } = getCircleParams();
-    const nodeRadius = radius * MAP_CONSTANTS.NODE_RADIUS_FACTOR;
-    
-    // Start from top and go clockwise
-    const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
-    
-    return {
-      x: centerX + (radius - nodeRadius) * Math.cos(angle),
-      y: centerY + (radius - nodeRadius) * Math.sin(angle),
-      nodeRadius
-    };
-  };
   
   // Render the map
   if (!mapData || scenarios.length === 0) return <div>Loading map...</div>;

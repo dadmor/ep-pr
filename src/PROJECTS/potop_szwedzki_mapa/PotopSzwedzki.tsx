@@ -68,11 +68,11 @@ const GameWithAnimations = () => {
   } = useAnimation();
 
   // Refs for the deck area
-  const deckRef = useRef(null);
+  const deckRef = useRef<HTMLDivElement | null>(null);
 
   // Track the last state for animations
-  const lastPlayerPlayAreaRef = useRef([]);
-  const lastOpponentPlayAreaRef = useRef([]);
+  const lastPlayerPlayAreaRef = useRef<CardType[]>([]);
+  const lastOpponentPlayAreaRef = useRef<CardType[]>([]);
   const isInitialMount = useRef(true);
 
   // Effect to load the initial scenario on component mount
@@ -86,7 +86,7 @@ const GameWithAnimations = () => {
   // Effect to detect card defeats
   useEffect(() => {
     // Find cards that were in the last state but are no longer present
-    const findDefeatedCards = (previousCards, currentCards) => {
+    const findDefeatedCards = (previousCards: CardType[], currentCards: CardType[]): CardType[] => {
       return previousCards.filter(
         (prevCard) =>
           !currentCards.some((currCard) => currCard.id === prevCard.id)
@@ -129,7 +129,7 @@ const GameWithAnimations = () => {
     lastOpponentPlayAreaRef.current = [...opponent.playArea];
   }, [player.playArea, opponent.playArea, gameStatus, showNotification]);
 
-  const handleCardInHandClick = (cardId) => {
+  const handleCardInHandClick = (cardId: string) => {
     if (turn === TURN_TYPE.PLAYER && gameStatus === WIN_CONDITION.PLAYING && !isAnimating) {
       const card = player.hand.find((c) => c.id === cardId);
       if (card && player.gold >= card.cost) {
@@ -139,13 +139,13 @@ const GameWithAnimations = () => {
     }
   };
 
-  const handlePlayerCardInPlayAreaClick = (cardId) => {
+  const handlePlayerCardInPlayAreaClick = (cardId: string) => {
     if (turn === TURN_TYPE.PLAYER && gameStatus === WIN_CONDITION.PLAYING && !isAnimating) {
       selectAttacker(selectedAttackerId === cardId ? null : cardId);
     }
   };
 
-  const handleOpponentCardInPlayAreaClick = (cardId) => {
+  const handleOpponentCardInPlayAreaClick = (cardId: string) => {
     if (
       turn === TURN_TYPE.PLAYER &&
       gameStatus === WIN_CONDITION.PLAYING &&
@@ -204,7 +204,7 @@ const GameWithAnimations = () => {
     }
   };
 
-  const handleSelectScenario = (index) => {
+  const handleSelectScenario = (index: number) => {
     if (!isAnimating) {
       setIsAnimating(true);
       showNotification(

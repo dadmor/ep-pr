@@ -24,9 +24,13 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     // "noUncheckedSideEffectImports": true,
+
+    
     
     /* Wyłączamy niepotrzebne opcje */
-    "allowImportingTsExtensions": false 
+    "allowImportingTsExtensions": false ,
+
+    "resolveJsonModule": true
   },
   "include": ["src/**/*", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]

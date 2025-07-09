@@ -6,7 +6,6 @@ import { useGameStore } from '../store/gameStore';
 import { 
   ANIMATION_DURATION, 
   NOTIFICATION_TYPE, 
-  TURN_TYPE, 
   WIN_CONDITION,
   ATTACK_LUNGE_DISTANCE
 } from '../constants';

@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { Card, GameState, Scenario, MapData } from "../types";
 import { 
-  allCards, 
   scenarios, 
   createShuffledDeck, 
   resetCardsAttackStatus, 
