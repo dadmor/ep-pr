@@ -4,10 +4,10 @@ import { lazy } from 'react';
 export const projectRegistry = [
 
   {
-    id: 'potop_gra',
-    name: 'Potop Gra',
-    path: '/potop-gra',
-    component: lazy(() => import('./PROJECTS/potop_szwedzki_mapa/PotopSzwedzki')),
+    id: 'the_swedish_deluge',
+    name: 'The Swedish Deluge',
+    path: '/the-swedish-deluge',
+    component: lazy(() => import('./PROJECTS/the_swedish_deluge/TheSwedishDeluge')),
   },
   {
     id: 'cambridge',

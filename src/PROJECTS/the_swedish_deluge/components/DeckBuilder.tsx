@@ -32,8 +32,9 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
     setAvailableCards(scenarioAvailableCards);
     
     // Start with any preset cards from the scenario
-    const startingCards = scenario.playerStartingCards.map(getNewCardInstance);
-    setSelectedCards(startingCards);
+    // We're not adding the starting cards to the selected deck here
+    // because the starting cards are already defined in the scenario
+    setSelectedCards([]);
   }, [scenario]);
   
   const addCardToDeck = (card: CardType) => {
@@ -53,6 +54,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
   
   const handleStartGame = () => {
     // Save the customized deck to the game store
+    // The customized deck is ONLY for the player's draw pile, not the starting cards
     customizeDeck(scenarioIndex, selectedCards);
     onStartGame();
   };
@@ -63,7 +65,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
       <div className="bg-amber-900 text-amber-100 py-4 px-6 z-10 shadow-md">
         <h1 className="text-2xl font-bold">{scenario.name} - Prepare Your Forces</h1>
         <p className="text-sm opacity-80">
-          Choose your units wisely before entering battle
+          Choose additional units to add to your deck. Your starting units are already defined by the scenario.
         </p>
       </div>
 
@@ -115,16 +117,33 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
         {/* Selected units and summary */}
         <div className="w-1/2 bg-amber-900 bg-opacity-80 p-4 flex flex-col">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl text-white font-bold">Your Army</h2>
+            <h2 className="text-xl text-white font-bold">Your Deck</h2>
             <div className="bg-yellow-600 px-4 py-2 rounded-full text-white font-bold flex items-center">
               {availableGold} <span className="ml-1">💰</span>
             </div>
           </div>
           
+          {/* Display starting units */}
+          <div className="mb-4">
+            <h3 className="text-lg text-amber-200 font-semibold mb-2">Starting Units (On Field)</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {scenario.playerStartingCards.map((card, index) => (
+                <div key={`starting-${index}`} className="bg-amber-800 bg-opacity-70 rounded-lg p-2">
+                  <div className="text-amber-200 text-sm font-semibold">{card.name}</div>
+                  <div className="flex justify-between text-xs text-amber-300">
+                    <span>ATK: {card.attack}</span>
+                    <span>HP: {card.hp}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
           <div className="flex-grow overflow-y-auto">
+            <h3 className="text-lg text-amber-200 font-semibold mb-2">Additional Cards (For Drawing)</h3>
             {selectedCards.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-amber-300 italic">
-                Select units to add to your army
+              <div className="h-32 flex items-center justify-center text-amber-300 italic">
+                Select units to add to your deck
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-4">
@@ -160,10 +179,10 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
           </div>
           
           <div className="mt-4 bg-amber-800 rounded-lg p-4">
-            <h3 className="text-white font-bold mb-2">Army Stats</h3>
+            <h3 className="text-white font-bold mb-2">Deck Stats</h3>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-amber-100">
               <div className="flex justify-between">
-                <span>Units:</span>
+                <span>Cards in Deck:</span>
                 <span className="font-bold">{selectedCards.length}</span>
               </div>
               <div className="flex justify-between">
@@ -175,10 +194,10 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
                 <span className="font-bold">{selectedCards.reduce((sum, card) => sum + card.hp, 0)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Avg. Armor:</span>
+                <span>Avg. Cost:</span>
                 <span className="font-bold">
                   {selectedCards.length > 0 
-                    ? (selectedCards.reduce((sum, card) => sum + card.armor, 0) / selectedCards.length).toFixed(1) 
+                    ? (selectedCards.reduce((sum, card) => sum + card.cost, 0) / selectedCards.length).toFixed(1) 
                     : '0'}
                 </span>
               </div>
@@ -188,7 +207,6 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({
           <div className="mt-6 flex justify-center">
             <ActionButton 
               onClick={handleStartGame}
-              disabled={selectedCards.length === 0}
               className="w-64"
             >
               Start Battle

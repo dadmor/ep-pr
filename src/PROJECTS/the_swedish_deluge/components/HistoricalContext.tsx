@@ -4,6 +4,7 @@ import { useGameStore } from "../store/gameStore";
 import ActionButton from "./ActionButton";
 import Card from "./Card";
 import { Motion, spring } from "react-motion";
+import ScenarioMap from "./ScenarioMap";
 
 interface HistoricalContextProps {
   scenarioIndex: number;
@@ -59,6 +60,16 @@ const HistoricalContext: React.FC<HistoricalContextProps> = ({
 
       {/* Map with strategic elements */}
       <div className="relative flex-grow">
+        {/* Add the ScenarioMap as the background */}
+        <div className="absolute inset-0 w-full h-full">
+          <ScenarioMap
+            scenarios={scenarios}
+            currentIndex={scenarioIndex}
+            onSelectScenario={() => {}} // Disabled in history mode
+            isAnimating={false}
+          />
+        </div>
+
         {/* SVG overlay for arrows and icons */}
         <svg 
           className="absolute inset-0 w-full h-full z-20 pointer-events-none" 

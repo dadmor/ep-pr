@@ -1,4 +1,4 @@
-// store/gameStore.ts - Updated with new functionality
+// store/gameStore.ts - Fixed customizeDeck function
 import { create } from "zustand";
 import { Card, GameState, Scenario, MapData, GameFlow, ScenarioHistory, HistoricalArrow, HistoricalIcon } from "../types";
 import { 
@@ -529,18 +529,42 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
   
+  // FIXED: This function now correctly adds customized cards to the deck only, not the play area
   customizeDeck: (scenarioIndex: number, customCards: Card[]) => {
-    // This function replaces the player's starting cards with the customized deck
     set(state => {
-      // Create new player with custom cards
-      const updatedPlayer = {
-        ...state.player,
-        playArea: customCards.map(getNewCardInstance),
-        deck: createShuffledDeck(customCards)
-      };
+      // Get the current scenario
+      const scenario = state.scenarios[scenarioIndex];
       
+      // The starting cards are defined by the scenario
+      const startingCards = scenario.playerStartingCards.map(getNewCardInstance);
+      
+      // The deck is populated with the custom selected cards
+      const playerDeck = customCards.length > 0 
+        ? customCards.map(getNewCardInstance) // Use custom cards if provided
+        : createShuffledDeck(startingCards); // Default to shuffled deck
+        
+      // Draw initial hand
+      const initialPlayerHand = [];
+      let remainingPlayerDeck = [...playerDeck];
+
+      for (
+        let i = 0;
+        i < INITIAL_HAND_SIZE && remainingPlayerDeck.length > 0 && initialPlayerHand.length < MAX_HAND_SIZE;
+        i++
+      ) {
+        const [drawnCard, ...restDeck] = remainingPlayerDeck;
+        initialPlayerHand.push(drawnCard);
+        remainingPlayerDeck = restDeck;
+      }
+      
+      // Update the player state with the starting cards in play area and the custom deck
       return {
-        player: updatedPlayer,
+        player: {
+          ...state.player,
+          playArea: startingCards, // Use scenario's starting cards for play area
+          deck: remainingPlayerDeck, // Use custom deck for drawing
+          hand: initialPlayerHand // Initial hand drawn from the deck
+        },
         gameFlow: GAME_FLOW.GAME_SCREEN
       };
     });
