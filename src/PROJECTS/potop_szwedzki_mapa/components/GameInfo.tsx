@@ -26,11 +26,11 @@ const GameInfo: React.FC<GameInfoProps> = ({ onNextScenario, onResetGame }) => {
 
   return (
     <div className="p-4 bg-gray-800 text-white rounded-lg shadow-xl m-4 w-64 flex flex-col space-y-4">
-      <h2 className="text-2xl font-bold text-center">Game Info</h2>
+     
       
       <div className="text-lg">
         <p>
-          Current Turn: 
+          Current: 
           <span className={clsx(
             "font-semibold capitalize ml-2 transition-colors duration-300",
             { 'text-blue-400': turn === 'player', 'text-red-400': turn === 'opponent' }

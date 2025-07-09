@@ -26,7 +26,9 @@ const Card: React.FC<CardProps> = ({
 
   // Register card ref for animations
   useEffect(() => {
-    registerCardRef(card.id, cardRef.current);
+    if (cardRef.current) {
+      registerCardRef(card.id, cardRef.current);
+    }
     return () => registerCardRef(card.id, null);
   }, [card.id, registerCardRef]);
 
@@ -36,11 +38,14 @@ const Card: React.FC<CardProps> = ({
     }
   };
 
-  // Uporządkowanie klas CSS za pomocą clsx
+  // Calculate HP percentage for progress bar
+  const hpPercentage = (card.hp / card.maxHp) * 100;
+
+  // Organize CSS classes with clsx
   const cardClasses = clsx(
     'relative w-32 h-48 bg-gray-800 rounded-lg shadow-lg text-white font-bold',
     'flex flex-col justify-between items-center p-2 m-2 border-2',
-    'transition-all duration-300', // Add transition for smoother effects
+    'transition-all duration-300', // For smoother transitions
     {
       'cursor-pointer hover:scale-105 transition-transform': isClickable,
       'border-blue-500 ring-4 ring-blue-500': isSelected,
@@ -58,18 +63,47 @@ const Card: React.FC<CardProps> = ({
       onClick={handleClick} 
       data-card-id={card.id} // Add data attribute for easier selection
     >
-      <div className="text-sm text-center w-full truncate">{card.name}</div>
-      <div className="absolute top-2 left-2 bg-yellow-500 text-gray-900 text-xs px-2 py-0.5 rounded-full">
-        Cost: {card.cost}
+      {/* Top section with name and cost */}
+      <div className="w-full flex justify-between items-start">
+        <div className="text-sm text-center truncate max-w-[70%]">{card.name}</div>
+        <div className="bg-yellow-500 text-gray-900 text-xs px-2 py-0.5 rounded-full flex items-center">
+          <span>{card.cost}</span>
+        </div>
       </div>
-      <div className="flex-grow flex flex-col justify-center items-center">
-        <div className="text-xl">⚔️ {card.attack}</div>
-        <div className="text-lg">🛡️ {card.armor}</div>
-        <div className="text-lg">❤️ {card.hp}/{card.maxHp}</div>
+      
+      {/* Middle section for card art or description */}
+      <div className="flex-grow flex flex-col justify-center items-center py-2">
+        {/* Card art or description could go here */}
+      </div>
+      
+      {/* Bottom section with stats and HP bar */}
+      <div className="w-full mt-auto">
+        {/* Attack and Armor stats */}
+        <div className="flex justify-between items-center mb-1 px-1">
+          <div className="text-base flex items-center">⚔️ {card.attack}</div>
+          <div className="text-base flex items-center">🛡️ {card.armor}</div>
+        </div>
+        
+        {/* HP Progress bar */}
+        <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div 
+            className={clsx(
+              "h-full rounded-full transition-all duration-300",
+              hpPercentage > 66 ? "bg-green-500" : 
+              hpPercentage > 33 ? "bg-yellow-500" : "bg-red-500"
+            )}
+            style={{ width: `${hpPercentage}%` }}
+          ></div>
+        </div>
+        
+        {/* HP text overlay */}
+        <div className="text-xs text-center mt-0.5">
+          ❤️ {card.hp}/{card.maxHp}
+        </div>
       </div>
     </div>
   );
 };
 
-// Optymalizacja renderowania komponentu za pomocą React.memo
+// Optimize rendering with React.memo
 export default React.memo(Card);

@@ -51,21 +51,19 @@ const GameWithAnimations: React.FC = () => {
     endTurn,
     loadScenario,
     resetGame,
+    addMessage
   } = useGameStore();
 
   const { 
     isAnimating,
-    animateCardPlacement,
+    setIsAnimating,
     animateAttack,
-    animateCardDefeated,
+    animateDamage,
     showNotification,
-    animateScenarioSetup
+    autoAnimateRef
   } = useAnimation();
 
-  // Refs for positioning
-  const playerAreaRef = useRef<HTMLDivElement>(null);
-  const opponentAreaRef = useRef<HTMLDivElement>(null);
-  const handAreaRef = useRef<HTMLDivElement>(null);
+  // Refs for the deck area
   const deckRef = useRef<HTMLDivElement>(null);
 
   // Track the last state for animations
@@ -80,21 +78,6 @@ const GameWithAnimations: React.FC = () => {
       isInitialMount.current = false;
     }
   }, [loadScenario]);
-
-  // Effect to animate scenario setup
-  useEffect(() => {
-    if (!isInitialMount.current && playerAreaRef.current && opponentAreaRef.current) {
-      const playerCardIds = player.playArea.map(card => card.id);
-      const opponentCardIds = opponent.playArea.map(card => card.id);
-      
-      // Animate the initial setup
-      animateScenarioSetup(playerCardIds, opponentCardIds, () => {
-        // Update the last state references
-        lastPlayerPlayAreaRef.current = [...player.playArea];
-        lastOpponentPlayAreaRef.current = [...opponent.playArea];
-      });
-    }
-  }, [currentScenarioIndex]); // This will trigger when scenario changes
 
   // Effect to detect card defeats
   useEffect(() => {
@@ -120,53 +103,39 @@ const GameWithAnimations: React.FC = () => {
         opponent.playArea
       );
 
-      // Animate any defeated cards
+      // Notify about defeated cards
       defeatedPlayerCards.forEach(card => {
-        animateCardDefeated(card.id, card.goldValue, () => {
-          if (gameStatus === 'opponentWins') {
-            showNotification('You have been defeated!', 'warning');
-          }
-        });
+        showNotification(`${card.name} was defeated!`, 'warning');
+        if (gameStatus === 'opponentWins') {
+          showNotification('You have been defeated!', 'warning');
+        }
       });
 
       defeatedOpponentCards.forEach(card => {
-        animateCardDefeated(card.id, card.goldValue, () => {
-          if (gameStatus === 'playerWins') {
-            showNotification('Victory! You have defeated your opponent!', 'success');
-          }
-        });
+        showNotification(`${card.name} was defeated!`, 'success');
+        if (gameStatus === 'playerWins') {
+          showNotification('Victory! You have defeated your opponent!', 'success');
+        }
       });
     }
 
     // Update the last state references
     lastPlayerPlayAreaRef.current = [...player.playArea];
     lastOpponentPlayAreaRef.current = [...opponent.playArea];
-  }, [player.playArea, opponent.playArea, gameStatus]);
+  }, [player.playArea, opponent.playArea, gameStatus, showNotification]);
 
   const handleCardInHandClick = (cardId: string) => {
     if (turn === "player" && gameStatus === "playing" && !isAnimating) {
       const card = player.hand.find(c => c.id === cardId);
       if (card && player.gold >= card.cost) {
-        // Get the position for where the card will be placed
-        if (playerAreaRef.current && handAreaRef.current) {
-          const handCardElement = handAreaRef.current.querySelector(`[data-card-id="${cardId}"]`);
-          const playerAreaRect = playerAreaRef.current.getBoundingClientRect();
-          
-          // Calculate center position of player area
-          const toPosition = {
-            top: playerAreaRect.top + playerAreaRect.height / 2 - 75, // Adjust for card height
-            left: playerAreaRect.left + playerAreaRect.width / 2 - 50  // Adjust for card width
-          };
-          
-          // Call the animation function first, then the game logic
-          animateCardPlacement(cardId, handCardElement as HTMLElement, toPosition, () => {
-            playCard(cardId);
-            showNotification(`Played ${card.name} for ${card.cost} gold`, 'info');
-          });
-        } else {
-          // Fallback if refs aren't available
+        setIsAnimating(true);
+        // Use a small delay for visual feedback
+        setTimeout(() => {
           playCard(cardId);
-        }
+          showNotification(`Played ${card.name} for ${card.cost} gold`, 'info', () => {
+            setIsAnimating(false);
+          });
+        }, 200);
       }
     }
   };
@@ -190,7 +159,7 @@ const GameWithAnimations: React.FC = () => {
         animateAttack(selectedAttackerId, cardId, damage, () => {
           attackCard(selectedAttackerId, cardId);
           
-          // If target is defeated, the effect will handle the defeat animation
+          // Notification is handled within the attack animation callbacks
           if (target.hp <= damage) {
             showNotification(`${target.name} was defeated!`, 'success');
           }
@@ -201,74 +170,77 @@ const GameWithAnimations: React.FC = () => {
 
   const handleDrawCard = () => {
     if (!isDrawDisabled(turn, player.gold, player.hand.length, player.deck.length, gameStatus) && !isAnimating) {
-      // Get the positions for animation
-      if (deckRef.current && handAreaRef.current) {
-        const deckRect = deckRef.current.getBoundingClientRect();
-        const handRect = handAreaRef.current.getBoundingClientRect();
-        
+      setIsAnimating(true);
+      
+      // If deck reference is available, animate card draw
+      if (deckRef.current) {
         // Create temporary invisible card element for the animation
         const tempCard = document.createElement('div');
         tempCard.className = 'card-back bg-purple-800 rounded-lg shadow-lg';
         tempCard.style.width = '128px';
         tempCard.style.height = '192px';
         tempCard.style.position = 'absolute';
+        
+        const deckRect = deckRef.current.getBoundingClientRect();
         tempCard.style.top = `${deckRect.top}px`;
         tempCard.style.left = `${deckRect.left}px`;
         tempCard.style.zIndex = '1000';
         tempCard.style.pointerEvents = 'none';
+        
         document.body.appendChild(tempCard);
         
-        // Animate the card draw
-        const toPosition = {
-          top: handRect.top + handRect.height / 2 - 75,
-          left: handRect.left + handRect.width / 2 - 50
-        };
+        // Simple animation using Web Animations API
+        const animation = tempCard.animate(
+          [
+            { top: `${deckRect.top}px`, left: `${deckRect.left}px`, opacity: 1, transform: 'scale(1)' },
+            { top: `${deckRect.top - 50}px`, left: `${deckRect.left + 100}px`, opacity: 0.8, transform: 'scale(0.9)' }
+          ],
+          { duration: 400, easing: 'ease-in-out' }
+        );
         
-        // Use the utility directly since we don't have the card ID yet
-        import('./utils/animations').then(({ AnimationUtils }) => {
-          AnimationUtils.animateCardPlacement(
-            tempCard,
-            { top: deckRect.top, left: deckRect.left },
-            toPosition,
-            () => {
-              document.body.removeChild(tempCard);
-              drawCard();
-              showNotification('Card drawn', 'info');
-            }
-          );
-        });
+        animation.onfinish = () => {
+          document.body.removeChild(tempCard);
+          drawCard();
+          showNotification('Card drawn', 'info', () => {
+            setIsAnimating(false);
+          });
+        };
       } else {
         // Fallback if refs aren't available
         drawCard();
+        showNotification('Card drawn', 'info', () => {
+          setIsAnimating(false);
+        });
       }
     }
   };
 
   const handleNextScenario = () => {
-    if (currentScenarioIndex < scenarios.length - 1) {
+    if (currentScenarioIndex < scenarios.length - 1 && !isAnimating) {
+      setIsAnimating(true);
       showNotification(`Loading next scenario: ${scenarios[currentScenarioIndex + 1].name}`, 'info', () => {
         loadScenario(currentScenarioIndex + 1);
+        setIsAnimating(false);
       });
     }
   };
 
-  // Fixed function: First end player's turn, then execute opponent's turn
   const handleEndTurn = () => {
     if (!isEndTurnDisabled(turn, gameStatus) && !isAnimating) {
+      setIsAnimating(true);
+      addMessage("Ending turn. Opponent's turn begins.");
+      
       showNotification("Ending turn. Opponent's turn begins.", 'info', () => {
         // First end player's turn
         endTurn();
         
-        // Now start opponent's turn
-        const currentState = useGameStore.getState();
-        if (currentState.opponent.playArea.length > 0 || currentState.opponent.deck.length > 0) {
-          executeOpponentTurn();
-        }
+        // Then execute opponent's turn
+        executeOpponentTurn();
       });
     }
   };
   
-  // Completely redesigned opponent turn function with proper animations
+  // Opponent turn function
   const executeOpponentTurn = () => {
     // Get current game state
     const currentState = useGameStore.getState();
@@ -278,102 +250,24 @@ const GameWithAnimations: React.FC = () => {
       .filter(card => card.cost <= currentState.opponent.gold)
       .sort((a, b) => b.attack - a.attack);
       
-    // First try to play a card if we have gold and space
     if (playableCards.length > 0 && currentState.opponent.playArea.length < 5 && currentState.opponent.gold >= playableCards[0].cost) {
       const cardToPlay = playableCards[0];
       
-      // Pre-emptively add the card to opponent's play area without affecting the game state yet
-      // This registers the card in the DOM so we can animate it properly
-      // We'll call the actual game logic after the animation completes
-      
-      // First, update the state to make the card visible but don't deduct gold yet
-      // This is a temporary state update just for animation purposes
-      const tempCardId = `temp-${cardToPlay.id}`;
-      const tempCard = { ...cardToPlay, id: tempCardId };
-      
-      // Temporarily add the card to opponent's play area with a custom ID for animation
-      useGameStore.setState((state) => ({
-        opponent: {
-          ...state.opponent,
-          playArea: [...state.opponent.playArea, tempCard],
-        }
-      }));
-      
-      // Wait a moment for the DOM to update with the new card
+      // Play the card with a small delay for animation
       setTimeout(() => {
-        // Now that the card is in the DOM, we can animate it
-        if (opponentAreaRef.current) {
-          // Find the card element that was just added to the DOM
-          const cardElement = opponentAreaRef.current.querySelector(`[data-card-id="${tempCardId}"]`);
-          
-          if (cardElement) {  
-            // Calculate end position (center of opponent area)
-            const opponentAreaRect = opponentAreaRef.current.getBoundingClientRect();
-            const endPosition = {
-              top: opponentAreaRect.top + opponentAreaRect.height / 2 - 75,
-              left: opponentAreaRect.left + opponentAreaRect.width / 2 - 50
-            };
-            
-            // Make the card invisible initially
-            (cardElement as HTMLElement).style.opacity = '0';
-            
-            // Animate the card placement
-            animateCardPlacement(tempCardId, null, endPosition, () => {
-              // Remove the temporary card
-              useGameStore.setState((state) => ({
-                opponent: {
-                  ...state.opponent,
-                  playArea: state.opponent.playArea.filter(c => c.id !== tempCardId),
-                }
-              }));
-              
-              // Now play the real card using the game logic
-              useGameStore.getState().opponentPlayCard(cardToPlay.name);
-              
-              // Check if card was successfully played
-              const updatedState = useGameStore.getState();
-              const cardWasPlayed = updatedState.opponent.gold < currentState.opponent.gold;
-              
-              if (cardWasPlayed) {
-                showNotification(`Opponent played ${cardToPlay.name}`, 'warning', () => {
-                  // Continue with attack phase after playing card
-                  handleOpponentAttacks();
-                });
-              } else {
-                // If card play failed, move to attacks
-                handleOpponentAttacks();
-              }
-            });
-          } else {
-            // Fallback if the card element wasn't found
-            useGameStore.setState((state) => ({
-              opponent: {
-                ...state.opponent,
-                playArea: state.opponent.playArea.filter(c => c.id !== tempCardId),
-              }
-            }));
-            useGameStore.getState().opponentPlayCard(cardToPlay.name);
-            handleOpponentAttacks();
-          }
-        } else {
-          // Fallback if refs aren't available
-          useGameStore.setState((state) => ({
-            opponent: {
-              ...state.opponent,
-              playArea: state.opponent.playArea.filter(c => c.id !== tempCardId),
-            }
-          }));
-          useGameStore.getState().opponentPlayCard(cardToPlay.name);
+        useGameStore.getState().opponentPlayCard(cardToPlay.name);
+        showNotification(`Opponent played ${cardToPlay.name}`, 'warning', () => {
+          // Continue with attack phase after playing card
           handleOpponentAttacks();
-        }
-      }, 50); // Small delay to ensure DOM is updated
+        });
+      }, 500);
     } else {
       // No card played, proceed to attacks
       handleOpponentAttacks();
     }
   };
   
-  // Handle opponent attacks with animations - FIXED
+  // Handle opponent attacks
   const handleOpponentAttacks = () => {
     // Get current game state
     const currentState = useGameStore.getState();
@@ -382,8 +276,8 @@ const GameWithAnimations: React.FC = () => {
     if (attackers.length === 0 || currentState.player.playArea.length === 0) {
       // No available attackers or targets, end turn
       showNotification("Opponent's turn ends", 'info', () => {
-        // IMPORTANT FIX: Manually end opponent's turn and return to player
         useGameStore.getState().endTurn();
+        setIsAnimating(false);
       });
       return;
     }
@@ -392,7 +286,7 @@ const GameWithAnimations: React.FC = () => {
     executeNextAttack(attackers, 0);
   };
   
-  // Completely rewritten opponent attack handling with proper animations
+  // Execute opponent attacks one by one
   const executeNextAttack = (attackers: CardType[], index: number) => {
     // Always get the latest game state
     const currentState = useGameStore.getState();
@@ -400,8 +294,8 @@ const GameWithAnimations: React.FC = () => {
     if (index >= attackers.length || currentState.player.playArea.length === 0) {
       // All attacks completed or no more targets, end turn
       showNotification("Opponent's turn ends", 'info', () => {
-        // End opponent's turn and return to player
         useGameStore.getState().endTurn();
+        setIsAnimating(false);
       });
       return;
     }
@@ -413,6 +307,7 @@ const GameWithAnimations: React.FC = () => {
     if (targets.length === 0) {
       showNotification("Opponent's turn ends", 'info', () => {
         useGameStore.getState().endTurn();
+        setIsAnimating(false);
       });
       return;
     }
@@ -422,66 +317,46 @@ const GameWithAnimations: React.FC = () => {
     // Calculate damage for animation
     const damage = Math.max(0, attacker.attack - target.armor);
     
-    // Get references to the card DOM elements
-    const attackerElement = document.querySelector(`[data-card-id="${attacker.id}"]`) as HTMLElement;
-    const targetElement = document.querySelector(`[data-card-id="${target.id}"]`) as HTMLElement;
-    
-    if (!attackerElement || !targetElement) {
-      // If we can't find the DOM elements, just apply the game logic and continue
-      useGameStore.getState().opponentAttack(attacker.id, target.id);
-      executeNextAttack(attackers, index + 1);
-      return;
-    }
-    
-    // Show notification and animate attack with the exact same animations as player
+    // Show notification before attack
     showNotification(`Opponent's ${attacker.name} attacks your ${target.name}`, 'warning', () => {
-      // Copy the exact attack animation used for player
-      import('./utils/animations').then(({ AnimationUtils }) => {
-        // First animate the attack movement
-        AnimationUtils.animateAttack(
-          attackerElement,
-          targetElement,
-          () => {
-            // Then animate damage being received
-            AnimationUtils.animateDamage(
-              targetElement,
-              damage,
-              () => {
-                // Update game state with the attack
-                useGameStore.getState().opponentAttack(attacker.id, target.id);
-                
-                // Check if player was defeated
-                const updatedState = useGameStore.getState();
-                if (updatedState.gameStatus === 'opponentWins') {
-                  showNotification('You have been defeated!', 'warning');
-                  return;
-                }
-                
-                // Check if target was defeated - we don't need to animate defeat here
-                // as the useEffect watching playArea changes will handle that
-                const targetStillExists = updatedState.player.playArea.some(card => card.id === target.id);
-                
-                if (!targetStillExists) {
-                  showNotification(`Your ${target.name} was defeated!`, 'warning', () => {
-                    // Continue with next attack
-                    executeNextAttack(attackers, index + 1);
-                  });
-                } else {
-                  // Target survived, continue with next attack
-                  executeNextAttack(attackers, index + 1);
-                }
-              }
-            );
-          }
-        );
+      // Animate the attack
+      animateAttack(attacker.id, target.id, damage, () => {
+        // Update game state after animation completes
+        useGameStore.getState().opponentAttack(attacker.id, target.id);
+        
+        // Check if player was defeated
+        const updatedState = useGameStore.getState();
+        if (updatedState.gameStatus === 'opponentWins') {
+          showNotification('You have been defeated!', 'warning', () => {
+            setIsAnimating(false);
+          });
+          return;
+        }
+        
+        // Check if target was defeated
+        const targetStillExists = updatedState.player.playArea.some(card => card.id === target.id);
+        
+        if (!targetStillExists) {
+          showNotification(`Your ${target.name} was defeated!`, 'warning', () => {
+            // Continue with next attack
+            executeNextAttack(attackers, index + 1);
+          });
+        } else {
+          // Target survived, continue with next attack
+          executeNextAttack(attackers, index + 1);
+        }
       });
     });
   };
 
   const handleResetGame = () => {
-    showNotification("Resetting game...", 'warning', () => {
-      resetGame();
-    });
+    if (!isAnimating) {
+      setIsAnimating(true);
+      showNotification("Resetting game...", 'warning', () => {
+        resetGame();
+        setIsAnimating(false);
+      });
+    }
   };
 
   return (
@@ -503,7 +378,6 @@ const GameWithAnimations: React.FC = () => {
               turn === "player" &&
               gameStatus === "playing"
             }
-            areaRef={opponentAreaRef}
           />
 
           {/* Action Buttons */}
@@ -546,7 +420,6 @@ const GameWithAnimations: React.FC = () => {
             onCardClick={handlePlayerCardInPlayAreaClick}
             selectedAttackerId={selectedAttackerId}
             canTarget={false}
-            areaRef={playerAreaRef}
           />
         </div>
 
@@ -557,7 +430,6 @@ const GameWithAnimations: React.FC = () => {
             hand={player.hand}
             onCardClick={handleCardInHandClick}
             gold={player.gold}
-            handRef={handAreaRef}
           />
         </div>
       </div>

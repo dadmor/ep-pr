@@ -12,15 +12,12 @@
     "lint": "eslint src --ext ts,tsx"
   },
   "dependencies": {
+    "@formkit/auto-animate": "^0.8.2",
     "clsx": "^2.1.1",
-    "gsap": "^3.13.0",
-    "honeycomb-grid": "^4.1.5",
     "lucide-react": "^0.487.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-hexgrid": "^2.0.1",
     "react-router-dom": "^6.10.0",
-    "simplex-noise": "^4.0.3",
     "uuid": "^11.1.0",
     "zustand": "^5.0.6"
   },
