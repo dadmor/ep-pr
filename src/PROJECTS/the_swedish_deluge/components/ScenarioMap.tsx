@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from "react";
 import { Scenario, HistoricalArrow, HistoricalIcon } from "../types";
 import { useGameStore } from "../store/gameStore";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import BattleArrow from "./tacticsMap/BattleArrow"; 
+import MapPatterns from "./tacticsMap/MapPatterns";
 
 // Map styling constants with historical aesthetics
 const MAP_CONSTANTS = {
@@ -135,126 +137,6 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
     }
   }, [currentIndex, dimensions, scenarios, mapData, viewBox]);
 
-  // Draw arrow function
-  const drawArrow = (arrow: HistoricalArrow, progress: number = 1) => {
-    // Draw only the portion of the path based on animation progress
-    const x2 = arrow.start.x + (arrow.end.x - arrow.start.x) * progress;
-    const y2 = arrow.start.y + (arrow.end.y - arrow.start.y) * progress;
-
-    // Arrow head calculations
-    const angle = Math.atan2(y2 - arrow.start.y, x2 - arrow.start.x);
-    const headLength = 15; // Length of arrow head
-
-    return (
-      <>
-        {/* Arrow line */}
-        <line
-          x1={arrow.start.x}
-          y1={arrow.start.y}
-          x2={x2}
-          y2={y2}
-          stroke={arrow.color || "#7b1fa2"}
-          strokeWidth={4}
-          strokeDasharray={arrow.dashed ? "10,10" : "none"}
-          strokeLinecap="round"
-          className="drop-shadow-md"
-        />
-
-        {/* Arrow head */}
-        {progress > 0.9 && (
-          <>
-            <line
-              x1={x2}
-              y1={y2}
-              x2={x2 - headLength * Math.cos(angle - Math.PI / 6)}
-              y2={y2 - headLength * Math.sin(angle - Math.PI / 6)}
-              stroke={arrow.color || "#7b1fa2"}
-              strokeWidth={4}
-              strokeLinecap="round"
-            />
-            <line
-              x1={x2}
-              y1={y2}
-              x2={x2 - headLength * Math.cos(angle + Math.PI / 6)}
-              y2={y2 - headLength * Math.sin(angle + Math.PI / 6)}
-              stroke={arrow.color || "#7b1fa2"}
-              strokeWidth={4}
-              strokeLinecap="round"
-            />
-          </>
-        )}
-      </>
-    );
-  };
-
-  // Create pattern definitions for the historical map
-  const createMapPatterns = () => (
-    <defs>
-      {/* Paper texture */}
-      <pattern id="paperTexture" patternUnits="userSpaceOnUse" width="200" height="200">
-        <rect width="200" height="200" fill="#e8d9c0" />
-        <filter id="noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
-          <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.5 0" />
-          <feComposite operator="in" in2="SourceGraphic" result="noisy" />
-        </filter>
-        <rect width="200" height="200" filter="url(#noise)" opacity="0.2" />
-      </pattern>
-      
-      {/* Grid lines */}
-      <pattern id="gridPattern" patternUnits="userSpaceOnUse" width="50" height="50">
-        <rect width="50" height="50" fill="url(#paperTexture)" />
-        <line x1="0" y1="0" x2="50" y2="0" stroke="#8d6e63" strokeWidth="0.3" strokeOpacity="0.3" />
-        <line x1="0" y1="0" x2="0" y2="50" stroke="#8d6e63" strokeWidth="0.3" strokeOpacity="0.3" />
-      </pattern>
-      
-      {/* Terrain textures */}
-      <pattern id="provinceTexture1" patternUnits="userSpaceOnUse" width="50" height="50">
-        <rect width="50" height="50" fill="#e1c699" fillOpacity="0.6" />
-        <circle cx="25" cy="25" r="1" fill="#8d6e63" fillOpacity="0.3" />
-      </pattern>
-      
-      <pattern id="provinceTexture2" patternUnits="userSpaceOnUse" width="50" height="50">
-        <rect width="50" height="50" fill="#d1b995" fillOpacity="0.6" />
-        <line x1="10" y1="10" x2="15" y2="15" stroke="#8d6e63" strokeWidth="0.5" strokeOpacity="0.3" />
-        <line x1="35" y1="35" x2="40" y2="40" stroke="#8d6e63" strokeWidth="0.5" strokeOpacity="0.3" />
-      </pattern>
-      
-      <pattern id="provinceTexture3" patternUnits="userSpaceOnUse" width="50" height="50">
-        <rect width="50" height="50" fill="#c5af8c" fillOpacity="0.6" />
-        <path d="M10,10 Q15,5 20,10 T30,10" stroke="#8d6e63" strokeWidth="0.5" fill="none" strokeOpacity="0.3" />
-      </pattern>
-      
-      <pattern id="provinceTexture4" patternUnits="userSpaceOnUse" width="50" height="50">
-        <rect width="50" height="50" fill="#dec286" fillOpacity="0.6" />
-        <path d="M10,20 Q20,10 30,20" stroke="#8d6e63" strokeWidth="0.5" fill="none" strokeOpacity="0.3" />
-        <path d="M10,30 Q20,20 30,30" stroke="#8d6e63" strokeWidth="0.5" fill="none" strokeOpacity="0.3" />
-      </pattern>
-      
-      {/* Filter for aged effect */}
-      <filter id="aged" x="0" y="0" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
-        <feGaussianBlur stdDeviation="0.5" />
-        <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.95 0" />
-      </filter>
-      
-      {/* City glow */}
-      <filter id="cityGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="2" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-      
-      {/* Text shadow */}
-      <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feOffset result="offOut" in="SourceGraphic" dx="1" dy="1" />
-        <feColorMatrix result="matrixOut" in="offOut" type="matrix" values="0.2 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" />
-        <feGaussianBlur result="blurOut" in="matrixOut" stdDeviation="1" />
-        <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
-      </filter>
-    </defs>
-  );
-
   // Render the map
   if (!mapData || scenarios.length === 0) return <div>Loading map...</div>;
 
@@ -269,7 +151,41 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Pattern and filter definitions */}
-        {createMapPatterns()}
+        <defs>
+          {/* Wzory zostały wydzielone do osobnego komponentu */}
+          <MapPatterns />
+          
+          {/* Filtry pozostają w głównym komponencie */}
+          <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.5 0" />
+            <feComposite operator="in" in2="SourceGraphic" result="noisy" />
+          </filter>
+          
+          <filter id="aged" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+            <feGaussianBlur stdDeviation="0.5" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.95 0" />
+          </filter>
+          
+          <filter id="cityGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          
+          <filter id="cityInnerGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          
+          <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feOffset result="offOut" in="SourceGraphic" dx="1" dy="1" />
+            <feColorMatrix result="matrixOut" in="offOut" type="matrix" values="0.2 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" />
+            <feGaussianBlur result="blurOut" in="matrixOut" stdDeviation="1" />
+            <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+          </filter>
+        </defs>
         
         {/* Background with paper texture and grid */}
         <rect
@@ -432,9 +348,10 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
             {/* Render historical arrows with auto-animate */}
             <g ref={arrowsContainerRef}>
               {historyArrows.map((arrow, idx) => (
-                <g key={`arrow-${idx}`}>
-                  {drawArrow(arrow)}
-                </g>
+                <BattleArrow 
+                  key={`arrow-${idx}`} 
+                  arrow={arrow} 
+                />
               ))}
             </g>
 
