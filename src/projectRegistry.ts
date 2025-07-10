@@ -19,7 +19,7 @@ export const projectRegistry = [
     id: 'gameScenarioEditor',
     name: 'Game Scenario Editor',
     path: '/gameScenarioEditor',
-    component: lazy(() => import('./PROJECTS/game_editors/scenario')),
+    component: lazy(() => import('./PROJECTS/game_editors/Scenario')),
   },
   {
     id: 'cambridge',

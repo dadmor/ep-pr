@@ -1,11 +1,26 @@
-import React from 'react';
+import React, { RefObject, ChangeEvent } from 'react';
+import { Card } from '../Scenario';
+
+interface CardsTabProps {
+  cards: Card[];
+  setCards: React.Dispatch<React.SetStateAction<Card[]>>;
+  importCards: (event: ChangeEvent<HTMLInputElement>) => void;
+  exportCards: () => void;
+  cardsInputRef: RefObject<HTMLInputElement>;
+}
 
 // Komponent zakładki Karty
-const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) => {
+const CardsTab: React.FC<CardsTabProps> = ({ 
+  cards, 
+  setCards, 
+  importCards, 
+  exportCards, 
+  cardsInputRef 
+}) => {
   // Dodawanie nowej karty
   const addNewCard = () => {
     // Szablon nowej karty
-    const newCard = {
+    const newCard: Card = {
       name: `New Card ${cards.length + 1}`,
       maxHp: 10,
       armor: 1,
@@ -19,14 +34,22 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
   };
   
   // Edycja karty
-  const editCard = (index, field, value) => {
+  const editCard = (index: number, field: keyof Card, value: string | number) => {
     const updatedCards = [...cards];
-    updatedCards[index][field] = value;
+    
+    if (field === 'name' || field === 'faction') {
+      // Handle string fields
+      updatedCards[index][field] = value as string;
+    } else {
+      // Handle numeric fields
+      updatedCards[index][field] = Number(value);
+    }
+    
     setCards(updatedCards);
   };
   
   // Usuwanie karty
-  const deleteCard = (index) => {
+  const deleteCard = (index: number) => {
     if (window.confirm('Czy na pewno chcesz usunąć tę kartę?')) {
       const updatedCards = [...cards];
       updatedCards.splice(index, 1);
@@ -47,7 +70,7 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
             accept=".json"
           />
           <button 
-            onClick={() => cardsInputRef.current.click()}
+            onClick={() => cardsInputRef.current?.click()}
             className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Importuj JSON
@@ -102,7 +125,7 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
                     <input 
                       type="number"
                       value={card.maxHp}
-                      onChange={(e) => editCard(index, 'maxHp', parseInt(e.target.value))}
+                      onChange={(e) => editCard(index, 'maxHp', e.target.value)}
                       className="w-20 p-1 border rounded text-center"
                       min="1"
                     />
@@ -111,7 +134,7 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
                     <input 
                       type="number"
                       value={card.armor}
-                      onChange={(e) => editCard(index, 'armor', parseInt(e.target.value))}
+                      onChange={(e) => editCard(index, 'armor', e.target.value)}
                       className="w-20 p-1 border rounded text-center"
                       min="0"
                     />
@@ -120,7 +143,7 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
                     <input 
                       type="number"
                       value={card.attack}
-                      onChange={(e) => editCard(index, 'attack', parseInt(e.target.value))}
+                      onChange={(e) => editCard(index, 'attack', e.target.value)}
                       className="w-20 p-1 border rounded text-center"
                       min="1"
                     />
@@ -129,7 +152,7 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
                     <input 
                       type="number"
                       value={card.cost}
-                      onChange={(e) => editCard(index, 'cost', parseInt(e.target.value))}
+                      onChange={(e) => editCard(index, 'cost', e.target.value)}
                       className="w-20 p-1 border rounded text-center"
                       min="1"
                     />
@@ -138,7 +161,7 @@ const CardsTab = ({ cards, setCards, importCards, exportCards, cardsInputRef }) 
                     <input 
                       type="number"
                       value={card.goldValue}
-                      onChange={(e) => editCard(index, 'goldValue', parseInt(e.target.value))}
+                      onChange={(e) => editCard(index, 'goldValue', e.target.value)}
                       className="w-20 p-1 border rounded text-center"
                       min="1"
                     />

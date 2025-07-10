@@ -1,7 +1,23 @@
 import React from 'react';
+import { Story, Arrow } from '../Scenario';
+
+interface MapEditorProps {
+  story: Story;
+  storyIndex: number;
+  selectedPageIndex: number;
+  showArrowEditor: boolean;
+  showIconEditor: boolean;
+  selectedArrowIndex: number | null;
+  setSelectedArrowIndex: React.Dispatch<React.SetStateAction<number | null>>;
+  editArrow: (storyIndex: number, pageIndex: number, arrowIndex: number, field: string, value: number) => void;
+  stories: Story[];
+  setStories: React.Dispatch<React.SetStateAction<Story[]>>;
+  selectedIconIndex: number | null;
+  setSelectedIconIndex: React.Dispatch<React.SetStateAction<number | null>>;
+}
 
 // Komponent do edycji mapy (renderowania strzałek i ikon)
-const MapEditor = ({ 
+const MapEditor: React.FC<MapEditorProps> = ({ 
   story, 
   storyIndex, 
   selectedPageIndex, 
@@ -115,7 +131,7 @@ const MapEditor = ({
             } else {
               // Dodaj nową strzałkę
               const updatedStories = [...stories];
-              const newArrow = {
+              const newArrow: Arrow = {
                 start: { x, y },
                 end: { x: x + 100, y: y },
                 color: "#4a6fa5",
@@ -130,7 +146,7 @@ const MapEditor = ({
             const updatedStories = [...stories];
             const newIcon = {
               position: { x, y },
-              type: "infantry",
+              type: "infantry" as const,
               color: "#c65d2e",
               label: "New Icon"
             };

@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, RefObject, ChangeEvent } from 'react';
 import MapEditor from './MapEditor';
+import { Card, Scenario, Story, Arrow, Icon, Unit } from '../Scenario';
+
+interface StoriesTabProps {
+  stories: Story[];
+  setStories: React.Dispatch<React.SetStateAction<Story[]>>;
+  scenarios: Scenario[];
+  cards: Card[];
+  importStories: (event: ChangeEvent<HTMLInputElement>) => void;
+  exportStories: () => void;
+  storiesInputRef: RefObject<HTMLInputElement>;
+}
 
 // Komponent zakładki Historie
-const StoriesTab = ({ 
+const StoriesTab: React.FC<StoriesTabProps> = ({ 
   stories, 
   setStories, 
   scenarios, 
@@ -12,13 +23,13 @@ const StoriesTab = ({
   storiesInputRef 
 }) => {
   // Stany dla obsługi interfejsu
-  const [mapVisible, setMapVisible] = useState(false);
-  const [selectedStoryId, setSelectedStoryId] = useState(null);
-  const [selectedPageIndex, setSelectedPageIndex] = useState(0);
-  const [showArrowEditor, setShowArrowEditor] = useState(false);
-  const [showIconEditor, setShowIconEditor] = useState(false);
-  const [selectedArrowIndex, setSelectedArrowIndex] = useState(null);
-  const [selectedIconIndex, setSelectedIconIndex] = useState(null);
+  const [mapVisible, setMapVisible] = useState<boolean>(false);
+  const [selectedStoryId, setSelectedStoryId] = useState<number | null>(null);
+  const [selectedPageIndex, setSelectedPageIndex] = useState<number>(0);
+  const [showArrowEditor, setShowArrowEditor] = useState<boolean>(false);
+  const [showIconEditor, setShowIconEditor] = useState<boolean>(false);
+  const [selectedArrowIndex, setSelectedArrowIndex] = useState<number | null>(null);
+  const [selectedIconIndex, setSelectedIconIndex] = useState<number | null>(null);
   
   // Dodawanie nowej historii
   const addNewStory = () => {
@@ -28,7 +39,7 @@ const StoriesTab = ({
     }
     
     // Szablon nowej historii
-    const newStory = {
+    const newStory: Story = {
       scenarioId: scenarios[0].id,
       pages: [
         {
@@ -46,7 +57,7 @@ const StoriesTab = ({
   };
   
   // Dodawanie nowej strony do historii
-  const addNewPage = (storyIndex) => {
+  const addNewPage = (storyIndex: number) => {
     const updatedStories = [...stories];
     
     // Szablon nowej strony
@@ -64,18 +75,24 @@ const StoriesTab = ({
   };
   
   // Edycja strony w historii
-  const editPage = (storyIndex, pageIndex, field, value) => {
+  const editPage = (storyIndex: number, pageIndex: number, field: keyof (typeof stories)[0]['pages'][0], value: string) => {
     const updatedStories = [...stories];
-    updatedStories[storyIndex].pages[pageIndex][field] = value;
+    
+    if (field === 'title' || field === 'text' || field === 'date') {
+      updatedStories[storyIndex].pages[pageIndex][field] = value;
+    } else {
+      console.error(`Cannot assign string value to field ${field}`);
+    }
+    
     setStories(updatedStories);
   };
   
   // Dodawanie strzałki do strony
-  const addArrow = (storyIndex, pageIndex) => {
+  const addArrow = (storyIndex: number, pageIndex: number) => {
     const updatedStories = [...stories];
     
     // Szablon nowej strzałki
-    const newArrow = {
+    const newArrow: Arrow = {
       start: { x: 100, y: 100 },
       end: { x: 200, y: 200 },
       color: "#4a6fa5", // Niebieski - Szwedzi
@@ -87,37 +104,39 @@ const StoriesTab = ({
   };
   
   // Edycja strzałki
-  const editArrow = (storyIndex, pageIndex, arrowIndex, field, value) => {
+  const editArrow = (storyIndex: number, pageIndex: number, arrowIndex: number, field: string, value: number | boolean | string) => {
     const updatedStories = [...stories];
     
     if (field === 'startX') {
-      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].start.x = value;
+      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].start.x = value as number;
     } else if (field === 'startY') {
-      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].start.y = value;
+      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].start.y = value as number;
     } else if (field === 'endX') {
-      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].end.x = value;
+      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].end.x = value as number;
     } else if (field === 'endY') {
-      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].end.y = value;
-    } else {
-      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex][field] = value;
+      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].end.y = value as number;
+    } else if (field === 'color') {
+      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].color = value as string;
+    } else if (field === 'dashed') {
+      updatedStories[storyIndex].pages[pageIndex].arrows[arrowIndex].dashed = value as boolean;
     }
     
     setStories(updatedStories);
   };
   
   // Usuwanie strzałki
-  const deleteArrow = (storyIndex, pageIndex, arrowIndex) => {
+  const deleteArrow = (storyIndex: number, pageIndex: number, arrowIndex: number) => {
     const updatedStories = [...stories];
     updatedStories[storyIndex].pages[pageIndex].arrows.splice(arrowIndex, 1);
     setStories(updatedStories);
   };
   
   // Dodawanie ikony do strony
-  const addIcon = (storyIndex, pageIndex) => {
+  const addIcon = (storyIndex: number, pageIndex: number) => {
     const updatedStories = [...stories];
     
     // Szablon nowej ikony
-    const newIcon = {
+    const newIcon: Icon = {
       position: { x: 150, y: 150 },
       type: "infantry",
       color: "#c65d2e", // Pomarańczowy - Polacy
@@ -129,29 +148,33 @@ const StoriesTab = ({
   };
   
   // Edycja ikony
-  const editIcon = (storyIndex, pageIndex, iconIndex, field, value) => {
+  const editIcon = (storyIndex: number, pageIndex: number, iconIndex: number, field: string, value: number | string) => {
     const updatedStories = [...stories];
     
     if (field === 'positionX') {
-      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].position.x = value;
+      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].position.x = value as number;
     } else if (field === 'positionY') {
-      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].position.y = value;
-    } else {
-      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex][field] = value;
+      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].position.y = value as number;
+    } else if (field === 'type') {
+      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].type = value as any;
+    } else if (field === 'color') {
+      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].color = value as string;
+    } else if (field === 'label') {
+      updatedStories[storyIndex].pages[pageIndex].icons[iconIndex].label = value as string;
     }
     
     setStories(updatedStories);
   };
   
   // Usuwanie ikony
-  const deleteIcon = (storyIndex, pageIndex, iconIndex) => {
+  const deleteIcon = (storyIndex: number, pageIndex: number, iconIndex: number) => {
     const updatedStories = [...stories];
     updatedStories[storyIndex].pages[pageIndex].icons.splice(iconIndex, 1);
     setStories(updatedStories);
   };
   
   // Dodawanie jednostki do strony
-  const addUnit = (storyIndex, pageIndex) => {
+  const addUnit = (storyIndex: number, pageIndex: number) => {
     if (cards.length === 0) {
       alert('Najpierw dodaj karty, aby móc dodać jednostki.');
       return;
@@ -160,7 +183,7 @@ const StoriesTab = ({
     const updatedStories = [...stories];
     
     // Szablon nowej jednostki
-    const newUnit = {
+    const newUnit: Unit = {
       name: "New Unit",
       template: cards[0].name
     };
@@ -170,21 +193,21 @@ const StoriesTab = ({
   };
   
   // Edycja jednostki
-  const editUnit = (storyIndex, pageIndex, unitIndex, field, value) => {
+  const editUnit = (storyIndex: number, pageIndex: number, unitIndex: number, field: keyof Unit, value: string) => {
     const updatedStories = [...stories];
     updatedStories[storyIndex].pages[pageIndex].units[unitIndex][field] = value;
     setStories(updatedStories);
   };
   
   // Usuwanie jednostki
-  const deleteUnit = (storyIndex, pageIndex, unitIndex) => {
+  const deleteUnit = (storyIndex: number, pageIndex: number, unitIndex: number) => {
     const updatedStories = [...stories];
     updatedStories[storyIndex].pages[pageIndex].units.splice(unitIndex, 1);
     setStories(updatedStories);
   };
   
   // Usuwanie strony
-  const deletePage = (storyIndex, pageIndex) => {
+  const deletePage = (storyIndex: number, pageIndex: number) => {
     if (stories[storyIndex].pages.length <= 1) {
       alert('Historia musi zawierać co najmniej jedną stronę.');
       return;
@@ -203,7 +226,7 @@ const StoriesTab = ({
   };
   
   // Usuwanie historii
-  const deleteStory = (index) => {
+  const deleteStory = (index: number) => {
     if (window.confirm('Czy na pewno chcesz usunąć tę historię?')) {
       const updatedStories = [...stories];
       updatedStories.splice(index, 1);
@@ -427,7 +450,7 @@ const StoriesTab = ({
             accept=".json"
           />
           <button 
-            onClick={() => storiesInputRef.current.click()}
+            onClick={() => storiesInputRef.current?.click()}
             className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Importuj JSON
@@ -562,7 +585,7 @@ const StoriesTab = ({
                             value={story.pages[selectedPageIndex].text}
                             onChange={(e) => editPage(storyIndex, selectedPageIndex, 'text', e.target.value)}
                             className="w-full p-2 border rounded"
-                            rows="4"
+                            rows={4}
                           />
                         </div>
                         

@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { RefObject, ChangeEvent } from 'react';
+import { Card, Scenario } from '../Scenario';
+
+interface ScenariosTabProps {
+  scenarios: Scenario[];
+  setScenarios: React.Dispatch<React.SetStateAction<Scenario[]>>;
+  cards: Card[];
+  importScenarios: (event: ChangeEvent<HTMLInputElement>) => void;
+  exportScenarios: () => void;
+  scenariosInputRef: RefObject<HTMLInputElement>;
+}
 
 // Komponent zakładki Scenariusze
-const ScenariosTab = ({ 
+const ScenariosTab: React.FC<ScenariosTabProps> = ({ 
   scenarios, 
   setScenarios, 
   cards,
@@ -12,7 +22,7 @@ const ScenariosTab = ({
   // Dodawanie nowego scenariusza
   const addNewScenario = () => {
     // Szablon nowego scenariusza
-    const newScenario = {
+    const newScenario: Scenario = {
       id: scenarios.length,
       name: `New Scenario ${scenarios.length + 1}`,
       description: "Add your description here",
@@ -28,14 +38,22 @@ const ScenariosTab = ({
   };
   
   // Edycja scenariusza
-  const editScenario = (index, field, value) => {
+  const editScenario = (index: number, field: keyof Scenario, value: string | number) => {
     const updatedScenarios = [...scenarios];
-    updatedScenarios[index][field] = value;
+    
+    if (field === 'name' || field === 'description' || field === 'startingPlayer') {
+      // Handle string fields
+      updatedScenarios[index][field] = value as any;
+    } else {
+      // Handle numeric fields
+      updatedScenarios[index][field] = Number(value) as any;
+    }
+    
     setScenarios(updatedScenarios);
   };
   
   // Edycja kart startowych w scenariuszu
-  const editStartingCards = (scenarioIndex, playerType, cards) => {
+  const editStartingCards = (scenarioIndex: number, playerType: 'player' | 'opponent', cards: string[]) => {
     const updatedScenarios = [...scenarios];
     const field = playerType === 'player' ? 'playerStartingCards' : 'opponentStartingCards';
     updatedScenarios[scenarioIndex][field] = cards;
@@ -43,7 +61,7 @@ const ScenariosTab = ({
   };
   
   // Usuwanie scenariusza
-  const deleteScenario = (index) => {
+  const deleteScenario = (index: number) => {
     if (window.confirm('Czy na pewno chcesz usunąć ten scenariusz?')) {
       const updatedScenarios = [...scenarios];
       updatedScenarios.splice(index, 1);
@@ -70,7 +88,7 @@ const ScenariosTab = ({
             accept=".json"
           />
           <button 
-            onClick={() => scenariosInputRef.current.click()}
+            onClick={() => scenariosInputRef.current?.click()}
             className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Importuj JSON
@@ -139,7 +157,7 @@ const ScenariosTab = ({
                       value={scenario.description}
                       onChange={(e) => editScenario(index, 'description', e.target.value)}
                       className="w-full p-2 border rounded"
-                      rows="2"
+                      rows={2}
                     />
                   </div>
                 </div>
