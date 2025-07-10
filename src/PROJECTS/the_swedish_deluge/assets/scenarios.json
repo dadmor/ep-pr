@@ -1,0 +1,47 @@
+
+  [
+    {
+      "id": 0,
+      "name": "The Swedish Invasion",
+      "description": "July 1655: Swedish forces invade Poland from the north, starting the conflict.",
+      "playerStartingCards": ["Knight", "Archer", "Goblin"],
+      "opponentStartingCards": ["Defender", "Goblin"],
+      "startingPlayer": "player",
+      "playerStartingGold": 5,
+      "opponentStartingGold": 3,
+      "cityId": 1
+    },
+    {
+      "id": 1,
+      "name": "The Battle of Warsaw",
+      "description": "September 1655: Swedish forces led by King Charles X Gustav lay siege to Warsaw.",
+      "playerStartingCards": ["Knight", "Goblin"],
+      "opponentStartingCards": ["Ogre", "Archer"],
+      "startingPlayer": "opponent",
+      "playerStartingGold": 7,
+      "opponentStartingGold": 6,
+      "cityId": 2
+    },
+    {
+      "id": 2,
+      "name": "The Defense of Częstochowa",
+      "description": "November 1655: The legendary defense of Jasna Góra Monastery turns the tide of war.",
+      "playerStartingCards": ["Knight", "Defender"],
+      "opponentStartingCards": ["Archer", "Goblin", "Goblin"],
+      "startingPlayer": "player",
+      "playerStartingGold": 6,
+      "opponentStartingGold": 4,
+      "cityId": 4
+    },
+    {
+      "id": 3,
+      "name": "The Treaty of Bromberg",
+      "description": "November 1657: Poland secures Brandenburg-Prussia as an ally against Sweden.",
+      "playerStartingCards": ["Archer", "Archer", "Goblin"],
+      "opponentStartingCards": ["Knight", "Defender"],
+      "startingPlayer": "opponent",
+      "playerStartingGold": 8,
+      "opponentStartingGold": 5,
+      "cityId": 3
+    }
+  ]

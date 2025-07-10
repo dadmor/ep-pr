@@ -1,0 +1,85 @@
+
+
+  [
+    {
+      "name": "Knight",
+      "maxHp": 10,
+      "armor": 2,
+      "attack": 3,
+      "cost": 3,
+      "goldValue": 6,
+      "faction": "Polish-Lithuanian Commonwealth"
+    },
+    {
+      "name": "Archer",
+      "maxHp": 7,
+      "armor": 0,
+      "attack": 4,
+      "cost": 2,
+      "goldValue": 4,
+      "faction": "Polish-Lithuanian Commonwealth"
+    },
+    {
+      "name": "Defender",
+      "maxHp": 12,
+      "armor": 3,
+      "attack": 2,
+      "cost": 4,
+      "goldValue": 8,
+      "faction": "Polish-Lithuanian Commonwealth"
+    },
+    {
+      "name": "Goblin",
+      "maxHp": 5,
+      "armor": 0,
+      "attack": 2,
+      "cost": 1,
+      "goldValue": 2,
+      "faction": "Swedish Empire"
+    },
+    {
+      "name": "Ogre",
+      "maxHp": 15,
+      "armor": 1,
+      "attack": 5,
+      "cost": 5,
+      "goldValue": 10,
+      "faction": "Swedish Empire"
+    },
+    {
+      "name": "Hussar",
+      "maxHp": 12,
+      "armor": 1,
+      "attack": 6,
+      "cost": 6,
+      "goldValue": 12,
+      "faction": "Polish-Lithuanian Commonwealth"
+    },
+    {
+      "name": "Musketeer",
+      "maxHp": 8,
+      "armor": 1,
+      "attack": 5,
+      "cost": 4,
+      "goldValue": 8,
+      "faction": "Swedish Empire"
+    },
+    {
+      "name": "Cannon",
+      "maxHp": 6,
+      "armor": 0,
+      "attack": 8,
+      "cost": 7,
+      "goldValue": 14,
+      "faction": "Swedish Empire"
+    },
+    {
+      "name": "Peasant Militia",
+      "maxHp": 6,
+      "armor": 0,
+      "attack": 1,
+      "cost": 1,
+      "goldValue": 2,
+      "faction": "Polish-Lithuanian Commonwealth"
+    }
+  ]

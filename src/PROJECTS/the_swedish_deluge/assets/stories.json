@@ -1,0 +1,320 @@
+
+  [
+    {
+      "scenarioId": 0,
+      "pages": [
+        {
+          "title": "The Swedish Invasion Begins",
+          "text": "In July 1655, taking advantage of Poland's ongoing war with Russia, King Charles X Gustav of Sweden launched an invasion of the Polish-Lithuanian Commonwealth. Swedish forces crossed into Polish territory from Swedish Pomerania and East Prussia.",
+          "date": "July 1655",
+          "arrows": [
+            {
+              "start": { "x": 180, "y": 100 },
+              "end": { "x": 250, "y": 180 },
+              "color": "#4a6fa5",
+              "dashed": false
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 180, "y": 100 },
+              "type": "infantry",
+              "color": "#4a6fa5",
+              "label": "Swedish Army"
+            }
+          ],
+          "units": [
+            {"name": "Swedish Musketeer", "template": "Musketeer"},
+            {"name": "Swedish Pikeman", "template": "Goblin"}
+          ]
+        },
+        {
+          "title": "The Fall of Poznań",
+          "text": "By late July, the Swedish army had secured much of northern Poland. Several Polish nobles and military commanders swore allegiance to the Swedish king in what became known as the Capitulation of Ujście. The city of Poznań fell without resistance.",
+          "date": "July 25, 1655",
+          "arrows": [
+            {
+              "start": { "x": 250, "y": 180 },
+              "end": { "x": 250, "y": 240 },
+              "color": "#4a6fa5"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 250, "y": 240 },
+              "type": "battle",
+              "color": "#4a6fa5",
+              "label": "Poznań Falls"
+            }
+          ],
+          "units": [
+            {"name": "Swedish Musketeer", "template": "Musketeer"},
+            {"name": "Swedish Artillery", "template": "Cannon"}
+          ]
+        },
+        {
+          "title": "The March to Warsaw",
+          "text": "After securing Greater Poland, Swedish forces moved towards Warsaw. The Polish king, John II Casimir, fled to Silesia. Without strong leadership, Polish defenses were poorly coordinated, and Warsaw prepared for the inevitable Swedish assault.",
+          "date": "August 1655",
+          "arrows": [
+            {
+              "start": { "x": 250, "y": 240 },
+              "end": { "x": 360, "y": 250 },
+              "color": "#4a6fa5"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 360, "y": 250 },
+              "type": "infantry",
+              "color": "#4a6fa5",
+              "label": "Swedish Forces"
+            },
+            {
+              "position": { "x": 300, "y": 200 },
+              "type": "cavalry",
+              "color": "#c65d2e",
+              "label": "Polish Retreat"
+            }
+          ],
+          "units": [
+            {"name": "Polish Knight", "template": "Knight"},
+            {"name": "Swedish Commander", "template": "Musketeer"}
+          ]
+        }
+      ]
+    },
+    {
+      "scenarioId": 1,
+      "pages": [
+        {
+          "title": "Siege of Warsaw",
+          "text": "On September 8, 1655, Warsaw surrendered to the Swedish army after minimal resistance. The city's defenses were inadequate against the well-equipped Swedish forces, and many Polish nobles had already pledged loyalty to Charles X Gustav.",
+          "date": "September 8, 1655",
+          "arrows": [
+            {
+              "start": { "x": 300, "y": 200 },
+              "end": { "x": 360, "y": 250 },
+              "color": "#4a6fa5"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 360, "y": 250 },
+              "type": "battle",
+              "color": "#4a6fa5",
+              "label": "Swedish Siege"
+            }
+          ],
+          "units": [
+            {"name": "Swedish Artillery", "template": "Cannon"},
+            {"name": "Swedish Infantry", "template": "Musketeer"}
+          ]
+        },
+        {
+          "title": "The Great Pillage",
+          "text": "After capturing Warsaw, Swedish forces began looting the city and surrounding areas. Artwork, books, and treasures were taken back to Sweden. This period became known as the 'Swedish Deluge' due to the extensive destruction and looting.",
+          "date": "September-October 1655",
+          "icons": [
+            {
+              "position": { "x": 360, "y": 250 },
+              "type": "infantry",
+              "color": "#4a6fa5",
+              "label": "Looting Forces"
+            },
+            {
+              "position": { "x": 420, "y": 300 },
+              "type": "infantry",
+              "color": "#4a6fa5",
+              "label": "Southern Advance"
+            }
+          ],
+          "units": [
+            {"name": "Swedish Plunderer", "template": "Musketeer"},
+            {"name": "Polish Citizen", "template": "Peasant Militia"}
+          ]
+        },
+        {
+          "title": "Swedish Advance to Kraków",
+          "text": "By October, the Swedish forces had advanced to Kraków, Poland's cultural and historical capital. The city fell on October 13, 1655, further strengthening the Swedish position in Poland. Within just a few months, much of Poland had fallen under Swedish control.",
+          "date": "October 13, 1655",
+          "arrows": [
+            {
+              "start": { "x": 360, "y": 250 },
+              "end": { "x": 470, "y": 330 },
+              "color": "#4a6fa5"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 470, "y": 330 },
+              "type": "battle",
+              "color": "#4a6fa5",
+              "label": "Fall of Kraków"
+            }
+          ],
+          "units": [
+            {"name": "Swedish Heavy Infantry", "template": "Ogre"},
+            {"name": "Swedish Commander", "template": "Musketeer"}
+          ]
+        }
+      ]
+    },
+    {
+      "scenarioId": 2,
+      "pages": [
+        {
+          "title": "The Monastery of Jasna Góra",
+          "text": "In November 1655, a small force of Swedish troops approached the Jasna Góra Monastery in Częstochowa, which housed the revered Black Madonna icon. Despite overwhelming Swedish strength across the country, the monastery's defenders refused to surrender.",
+          "date": "November 18, 1655",
+          "arrows": [
+            {
+              "start": { "x": 470, "y": 330 },
+              "end": { "x": 420, "y": 380 },
+              "color": "#4a6fa5",
+              "dashed": true
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 420, "y": 380 },
+              "type": "infantry",
+              "color": "#4a6fa5",
+              "label": "Swedish Forces"
+            },
+            {
+              "position": { "x": 450, "y": 380 },
+              "type": "battle",
+              "color": "#c65d2e",
+              "label": "Monastery Defense"
+            }
+          ],
+          "units": [
+            {"name": "Monastery Defender", "template": "Defender"},
+            {"name": "Swedish Attacker", "template": "Musketeer"}
+          ]
+        },
+        {
+          "title": "The Siege of Jasna Góra",
+          "text": "Led by Prior Augustyn Kordecki, the monastery defenders - consisting of only 160 infantry, 70 monks, and about 80 volunteers - managed to hold out against 2,250 Swedish troops. The siege lasted 40 days, from November 18 to December 27, 1655.",
+          "date": "November-December 1655",
+          "icons": [
+            {
+              "position": { "x": 450, "y": 380 },
+              "type": "battle",
+              "color": "#c65d2e",
+              "label": "Heroic Defense"
+            }
+          ],
+          "units": [
+            {"name": "Polish Volunteer", "template": "Peasant Militia"},
+            {"name": "Monk Defender", "template": "Defender"}
+          ]
+        },
+        {
+          "title": "The Turning Point",
+          "text": "The successful defense of Jasna Góra became a symbol of Polish resistance. It galvanized the Polish people against the invaders and turned the tide of the war. Many viewed it as a miracle and a sign of divine intervention. A national uprising against the Swedes began to gain momentum.",
+          "date": "December 27, 1655",
+          "arrows": [
+            {
+              "start": { "x": 450, "y": 380 },
+              "end": { "x": 420, "y": 300 },
+              "color": "#c65d2e"
+            },
+            {
+              "start": { "x": 450, "y": 380 },
+              "end": { "x": 360, "y": 250 },
+              "color": "#c65d2e"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 420, "y": 300 },
+              "type": "infantry",
+              "color": "#c65d2e",
+              "label": "Polish Uprising"
+            }
+          ],
+          "units": [
+            {"name": "Polish Hussar", "template": "Hussar"},
+            {"name": "Polish Knight", "template": "Knight"}
+          ]
+        }
+      ]
+    },
+    {
+      "scenarioId": 3,
+      "pages": [
+        {
+          "title": "The Treaty of Bromberg",
+          "text": "By 1657, the tide had turned against Sweden. On November 6, 1657, Frederick William, Elector of Brandenburg-Prussia, switched sides and signed the Treaty of Bromberg (Bydgoszcz) with Poland. This was a significant diplomatic victory for the Polish-Lithuanian Commonwealth.",
+          "date": "November 6, 1657",
+          "arrows": [
+            {
+              "start": { "x": 200, "y": 180 },
+              "end": { "x": 250, "y": 240 },
+              "color": "#c65d2e"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 250, "y": 240 },
+              "type": "battle",
+              "color": "#c65d2e",
+              "label": "Bromberg Treaty"
+            }
+          ],
+          "units": [
+            {"name": "Polish Diplomat", "template": "Knight"},
+            {"name": "Prussian Representative", "template": "Knight"}
+          ]
+        },
+        {
+          "title": "Polish Counteroffensive",
+          "text": "With Brandenburg-Prussia now an ally, Poland launched counteroffensives against the Swedish forces. The Polish army, supported by Tatar forces and new allies, began to reclaim territories previously lost to Sweden. Charles X Gustav's position was rapidly deteriorating.",
+          "date": "1657-1658",
+          "arrows": [
+            {
+              "start": { "x": 360, "y": 250 },
+              "end": { "x": 240, "y": 130 },
+              "color": "#c65d2e"
+            },
+            {
+              "start": { "x": 250, "y": 240 },
+              "end": { "x": 240, "y": 130 },
+              "color": "#c65d2e"
+            }
+          ],
+          "icons": [
+            {
+              "position": { "x": 300, "y": 200 },
+              "type": "cavalry",
+              "color": "#c65d2e",
+              "label": "Polish-Tatar Forces"
+            }
+          ],
+          "units": [
+            {"name": "Polish Winged Hussar", "template": "Hussar"},
+            {"name": "Tatar Cavalry", "template": "Knight"}
+          ]
+        },
+        {
+          "title": "The End of the Deluge",
+          "text": "The war officially ended with the Treaty of Oliva on May 3, 1660. While the Polish-Lithuanian Commonwealth survived the 'Swedish Deluge,' it was severely weakened. The country had lost almost a third of its population and suffered enormous economic damage that would affect it for decades to come.",
+          "date": "May 3, 1660",
+          "icons": [
+            {
+              "position": { "x": 240, "y": 130 },
+              "type": "battle",
+              "color": "#c65d2e",
+              "label": "Treaty of Oliva"
+            }
+          ],
+          "units": [
+            {"name": "Polish Diplomat", "template": "Knight"},
+            {"name": "Swedish Diplomat", "template": "Musketeer"}
+          ]
+        }
+      ]
+    }
+  ]

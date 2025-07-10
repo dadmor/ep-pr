@@ -282,7 +282,7 @@ const GameWithAnimations = () => {
   // Render the main game screen
   const renderGameScreen = () => {
     return (
-      <div className="relative h-screen bg-amber-50 text-white overflow-hidden flex flex-col">
+      <div className="relative h-screen bg-amber-100 text-white overflow-hidden flex flex-col">
         {/* Fullscreen Scenario Map Background */}
         <div className="absolute inset-0 w-full h-full z-0">
           <ScenarioMap
