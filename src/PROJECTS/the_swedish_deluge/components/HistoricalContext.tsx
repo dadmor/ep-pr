@@ -166,7 +166,7 @@ const HistoricalContext: React.FC<HistoricalContextProps> = ({
           
           {/* Units showcase */}
           {currentPageData.units && currentPageData.units.length > 0 && (
-            <div className="absolute bottom-6 right-6 z-30 rounded-lg shadow-lg overflow-hidden"
+            <div className="absolute bottom-6 right-6 z-30 rounded-lg shadow-lg overflow-hidden backdrop-blur-2xl bg-opacity-70"
                  style={{
                    background: "url('/assets/light-parchment.jpg')",
                    backgroundSize: "cover",

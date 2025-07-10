@@ -11,8 +11,8 @@ const MAP_CONSTANTS = {
   NODE_RADIUS_FACTOR: 0.12,
   PATH_STROKE_WIDTH: 2,
   PATH_OPACITY: 0.8,
-  ZOOM_FACTOR: 1.5,
-  ZOOM_TRANSITION: 800,
+  ZOOM_FACTOR: 1.25,
+  ZOOM_TRANSITION: 150,
 };
 
 interface ScenarioMapProps {
@@ -321,9 +321,9 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
             <g key={`city-${city.id}`}>
               {/* City shadow */}
               <circle
-                cx={city.position.x + 2}
-                cy={city.position.y + 4}
-                r={city.size}
+                cx={city.position.x}
+                cy={city.position.y}
+                r={city.size+2}
                 fill="rgba(0,0,0,0.4)"
                 opacity={0.7}
               />
@@ -376,22 +376,22 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
                   cy={city.position.y}
                   r={city.size + 10}
                   fill="none"
-                  stroke="#FFD700"
-                  strokeWidth={2}
+                  stroke="#666"
+                  strokeWidth={8}
                   opacity={0.8}
-                  strokeDasharray="5,5"
+                  strokeDasharray="0.75"
                 >
                   <animate
                     attributeName="r"
-                    values={`${city.size + 5};${city.size + 15};${
-                      city.size + 5
+                    values={`${city.size + 4};${city.size + 8};${
+                      city.size + 4
                     }`}
                     dur="3s"
                     repeatCount="indefinite"
                   />
                   <animate
                     attributeName="opacity"
-                    values="0.3;0.8;0.3"
+                    values="0.3;0.7;0.3"
                     dur="3s"
                     repeatCount="indefinite"
                   />
