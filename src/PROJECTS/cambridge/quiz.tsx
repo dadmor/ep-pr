@@ -271,7 +271,7 @@ const CambridgeEnglishQuiz: React.FC = () => {
 
   if (quizCompleted && results) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 flex items-center justify-center p-5">
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-purple-700 flex items-center justify-center p-5 ">
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-10 max-w-2xl w-full border border-white/20">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-800 mb-4">🎓 Quiz Complete!</h1>

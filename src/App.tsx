@@ -6,7 +6,7 @@ import { projectRegistry } from './projectRegistry';
 
 const App = () => (
   <Router>
-    <main className="min-h-screen bg-gray-900 text-white">
+    <main className="min-h-screen bg-zinc-900">
       <Routes>
         <Route path="/" element={<HomePage />} />
         {projectRegistry.map((p) => (
@@ -15,7 +15,7 @@ const App = () => (
             path={p.path}
             element={
               <Suspense fallback={<div className="p-8 text-center">Ładowanie projektu...</div>}>
-                <p.component />
+                <p.component /> 
               </Suspense>
             }
           />

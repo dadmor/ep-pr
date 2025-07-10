@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 
 
 const HomePage = () => (
-  <div className="max-w-3xl mx-auto py-12 px-4">
-    <h1 className="text-4xl font-bold text-center mb-8">Projekty</h1>
+  <div className="max-w-3xl mx-auto py-12 px-4 text-gray-200">
+    <h1 className="text-4xl font-bold text-center mb-8">SMART EDUPLAY Projects</h1>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {projectRegistry.map((project) => (
         <Link

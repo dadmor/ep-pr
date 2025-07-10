@@ -10,15 +10,22 @@ export const projectRegistry = [
     component: lazy(() => import('./PROJECTS/the_swedish_deluge/TheSwedishDeluge')),
   },
   {
+    id: 'gameMapEditor',
+    name: 'Game Map Editor',
+    path: '/gameMapEditor',
+    component: lazy(() => import('./PROJECTS/game_editors/map')),
+  },
+  {
+    id: 'gameScenarioEditor',
+    name: 'Game Scenario Editor',
+    path: '/gameScenarioEditor',
+    component: lazy(() => import('./PROJECTS/game_editors/scenario')),
+  },
+  {
     id: 'cambridge',
     name: 'Cambridge',
     path: '/cambridge',
     component: lazy(() => import('./PROJECTS/cambridge/quiz')),
   },
-  {
-    id: 'gameHex',
-    name: 'gameHex',
-    path: '/game',
-    component: lazy(() => import('./PROJECTS/game/map')),
-  }
+ 
 ];

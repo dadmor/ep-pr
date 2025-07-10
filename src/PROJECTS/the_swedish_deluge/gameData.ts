@@ -1,6 +1,5 @@
-
 // gameData.ts - Updated to import data from JSON files
-import { Card, Scenario, ScenarioHistory } from './types';
+import { Card, Scenario, ScenarioHistory, HistoricalPage, HistoricalArrow } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -54,41 +53,65 @@ export const getNewCardInstance = (cardTemplate: Card | string): Card => {
   };
 };
 
-// Process scenarios from JSON
-export const scenarios: Scenario[] = scenariosJson.map(scenarioData => ({
-  name: scenarioData.name,
-  description: scenarioData.description,
-  playerStartingCards: scenarioData.playerStartingCards.map(cardName => 
-    getNewCardInstance(findCardTemplate(cardName))
-  ),
-  opponentStartingCards: scenarioData.opponentStartingCards.map(cardName => 
-    getNewCardInstance(findCardTemplate(cardName))
-  ),
-  startingPlayer: scenarioData.startingPlayer,
-  playerStartingGold: scenarioData.playerStartingGold,
-  opponentStartingGold: scenarioData.opponentStartingGold,
-  cityId: scenarioData.cityId
-}));
+// Process scenarios from JSON, ensuring type safety
+export const scenarios: Scenario[] = scenariosJson.map(scenarioData => {
+  return {
+    name: scenarioData.name,
+    description: scenarioData.description,
+    playerStartingCards: scenarioData.playerStartingCards.map(cardName => 
+      getNewCardInstance(findCardTemplate(cardName))
+    ),
+    opponentStartingCards: scenarioData.opponentStartingCards.map(cardName => 
+      getNewCardInstance(findCardTemplate(cardName))
+    ),
+    startingPlayer: scenarioData.startingPlayer as 'player' | 'opponent',
+    playerStartingGold: scenarioData.playerStartingGold,
+    opponentStartingGold: scenarioData.opponentStartingGold,
+    cityId: scenarioData.cityId
+  };
+});
 
-// Process historical data from JSON
-export const scenarioHistories: ScenarioHistory[] = storiesJson.map(historyData => ({
-  scenarioId: historyData.scenarioId,
-  pages: historyData.pages.map(page => ({
-    title: page.title,
-    text: page.text,
-    date: page.date,
-    arrows: page.arrows,
-    icons: page.icons,
-    // Process unit references in history pages
-    units: page.units?.map(unitData => {
-      const template = findCardTemplate(unitData.template);
-      return getNewCardInstance({
-        ...template,
-        name: unitData.name
-      });
+// Process historical data from JSON, ensuring type safety
+export const scenarioHistories: ScenarioHistory[] = storiesJson.map(historyData => {
+  return {
+    scenarioId: historyData.scenarioId,
+    pages: historyData.pages.map(page => {
+      // Create valid HistoricalPage object
+      const historicalPage: HistoricalPage = {
+        title: page.title,
+        text: page.text,
+        date: page.date
+      };
+      
+      // Add optional fields only if they exist in the source data
+      if (page.arrows) {
+        historicalPage.arrows = page.arrows as HistoricalArrow[];
+      }
+      
+      if (page.icons) {
+        historicalPage.icons = page.icons.map(icon => ({
+          position: icon.position,
+          type: icon.type as 'infantry' | 'cavalry' | 'artillery' | 'navy' | 'battle',
+          color: icon.color,
+          label: icon.label
+        }));
+      }
+      
+      // Process unit references in history pages
+      if (page.units) {
+        historicalPage.units = page.units.map(unitData => {
+          const template = findCardTemplate(unitData.template);
+          return getNewCardInstance({
+            ...template,
+            name: unitData.name
+          });
+        });
+      }
+      
+      return historicalPage;
     })
-  }))
-}));
+  };
+});
 
 // Helper function to create a shuffled deck, excluding cards already in play
 export const createShuffledDeck = (excludedCards: Card[]): Card[] =>
