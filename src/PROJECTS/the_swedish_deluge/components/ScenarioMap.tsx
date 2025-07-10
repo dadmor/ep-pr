@@ -152,10 +152,42 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
       >
         {/* Pattern and filter definitions */}
         <defs>
-          {/* Wzory zostały wydzielone do osobnego komponentu */}
+          {/* Istniejące wzory z MapPatterns */}
           <MapPatterns />
           
-          {/* Filtry pozostają w głównym komponencie */}
+          {/* Nowe efekty dla granic prowincji */}
+          {/* Efekt pędzla dla granic prowincji */}
+          <filter id="brushStroke" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" seed="10" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" result="displacedMap" />
+            <feGaussianBlur in="displacedMap" stdDeviation="1" result="blurredMap" />
+            <feComposite in="SourceGraphic" in2="blurredMap" operator="in" />
+          </filter>
+          
+          {/* Wewnętrzna poświata granicy */}
+          <filter id="innerGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.7  0 0 0 0 0.5  0 0 0 0 0.3  0 0 0 0.6 0" result="innerGlow" />
+            <feComposite in="innerGlow" in2="SourceAlpha" operator="in" />
+            <feComposite in="SourceGraphic" in2="innerGlow" operator="over" />
+          </filter>
+          
+          {/* Nowy efekt pastelowej granicy */}
+          <filter id="pastelBorder" x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.9  0 1 0 0 0.85  0 0 1 0 0.7  0 0 0 0.6 0" result="pastelGlow" />
+            <feComposite in="SourceGraphic" in2="pastelGlow" operator="over" />
+          </filter>
+          
+          {/* Efekt akwareli dla wypełnień */}
+          <filter id="watercolorEffect" x="0%" y="0%" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" seed="5" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" result="displacedMap" />
+            <feGaussianBlur in="displacedMap" stdDeviation="1" result="blurredMap" />
+            <feComposite in="blurredMap" in2="SourceGraphic" operator="atop" />
+          </filter>
+          
+          {/* Istniejące filtry pozostają niezmienione */}
           <filter id="noise">
             <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
             <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.5 0" />
@@ -185,6 +217,19 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
             <feGaussianBlur result="blurOut" in="matrixOut" stdDeviation="1" />
             <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
           </filter>
+          
+          {/* Definicje clipPath dla prowincji */}
+          {mapData.provinces.map((province) => {
+            const pathString = province.path
+              .map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x},${pt.y}`)
+              .join(" ") + "Z";
+              
+            return (
+              <clipPath id={`province-clip-${province.id}`} key={`clip-${province.id}`}>
+                <path d={pathString} />
+              </clipPath>
+            );
+          })}
         </defs>
         
         {/* Background with paper texture and grid */}
@@ -197,21 +242,49 @@ const ScenarioMap: React.FC<ScenarioMapProps> = ({
           filter="url(#aged)"
         />
         
-        {/* Render provinces with historical textures */}
-        {mapData.provinces.map((province, idx) => (
-          <path
-            key={`province-${province.id}`}
-            d={
-              province.path
-                .map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x},${pt.y}`)
-                .join(" ") + "Z"
-            }
-            fill={`url(#provinceTexture${(idx % 4) + 1})`} 
-            stroke={province.color}
-            strokeWidth={3}
-            opacity={0.9}
-          />
-        ))}
+        {/* Render provinces with historical textures - ZAKTUALIZOWANE z granicami nieprzekraczającymi obszaru prowincji */}
+        {mapData.provinces.map((province, idx) => {
+          // Tworzenie ścieżki dla prowincji
+          const pathString = province.path
+            .map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x},${pt.y}`)
+            .join(" ") + "Z";
+            
+          return (
+            <g key={`province-${province.id}`}>
+              {/* Główne wypełnienie prowincji */}
+              <path
+                d={pathString}
+                fill={`url(#provinceTexture${(idx % 4) + 1})`}
+                filter="url(#watercolorEffect)"
+                strokeWidth="0"
+              />
+              
+              {/* Wewnętrzna dekoracyjna granica - przycinana do obszaru prowincji */}
+              <path
+                d={pathString}
+                fill="none"
+                stroke={province.color}
+                strokeWidth="12"
+                strokeOpacity="0.25"
+                filter="url(#pastelBorder)"
+                strokeLinejoin="round"
+                clipPath={`url(#province-clip-${province.id})`}
+              />
+              
+              {/* Zewnętrzna granica z efektem pędzla - również przycinana */}
+              <path
+                d={pathString}
+                fill="none"
+                stroke={province.color}
+                strokeWidth="2.5"
+                strokeOpacity="0.8"
+                filter="url(#brushStroke)"
+                strokeLinejoin="round"
+                clipPath={`url(#province-clip-${province.id})`}
+              />
+            </g>
+          );
+        })}
         
         {/* Province labels */}
         {mapData.provinces.map((province) => {
