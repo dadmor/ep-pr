@@ -50,7 +50,7 @@ const Card: React.FC<CardProps> = ({
   // Organize CSS classes with clsx
   const cardClasses = clsx(
     'relative w-32 h-48 bg-zinc-700 rounded-lg shadow-lg text-white font-bold',
-    'flex flex-col justify-between items-center p-2 m-2 border-2',
+    'flex flex-col justify-between items-center p-2 m-2 border-2 select-none',
     'transition-all duration-300', // For smoother transitions
     {
       'cursor-pointer hover:scale-105 transition-transform': isClickable,
