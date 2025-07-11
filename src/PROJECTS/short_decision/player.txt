@@ -1,0 +1,113 @@
+import React, { useState } from 'react';
+import ReactPlayer from 'react-player';
+
+const App = () => {
+  const [url, setUrl] = useState('https://www.youtube.com/shorts/dQw4w9WgXcQ');
+  const [playing, setPlaying] = useState(false);
+
+  // Przykładowe linki do YouTube Shorts
+  const shortsUrls = [
+    'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+    'https://www.youtube.com/shorts/jNQXAC9IVRw',
+    'https://www.youtube.com/shorts/J---aiyznGQ'
+  ];
+
+  const handleUrlChange = (e) => {
+    setUrl(e.target.value);
+  };
+
+  const handlePlayPause = () => {
+    setPlaying(!playing);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-center">YouTube Shorts Player</h1>
+        
+        {/* Input do wklejania URL */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2">
+            URL YouTube Shorts:
+          </label>
+          <input
+            type="text"
+            value={url}
+            onChange={handleUrlChange}
+            className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Wklej link do YouTube Shorts"
+          />
+        </div>
+
+        {/* Przyciski z przykładowymi filmami */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Przykładowe Shorts:</h3>
+          <div className="flex flex-wrap gap-2">
+            {shortsUrls.map((shortUrl, index) => (
+              <button
+                key={index}
+                onClick={() => setUrl(shortUrl)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition-colors"
+              >
+                Short #{index + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Player w formacie Shorts (9:16) */}
+        <div className="flex justify-center">
+          <div className="bg-black rounded-lg overflow-hidden shadow-2xl" style={{ width: '315px', height: '560px' }}>
+            <ReactPlayer
+              src={url}
+              playing={playing}
+              controls={false}
+              width="315px"
+              height="560px"
+              config={{
+                youtube: {
+                  playerVars: {
+                    controls: 0,          // Ukryj kontrolki YouTube
+                    showinfo: 0,          // Ukryj info o filmie
+                    modestbranding: 1,    // Minimalne branding
+                    rel: 0,               // Nie pokazuj powiązanych filmów
+                    fs: 0,                // Wyłącz pełny ekran
+                    cc_load_policy: 0,    // Wyłącz napisy
+                    iv_load_policy: 3,    // Wyłącz adnotacje
+                    autohide: 1,          // Ukryj kontrolki automatycznie
+                    disablekb: 1,         // Wyłącz kontrolę klawiaturą
+                    loop: 1,              // Zapętl video
+                    playlist: url.split('/').pop()?.split('?')[0] // Potrzebne dla loop
+                  }
+                }
+              }}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onEnded={() => setPlaying(false)}
+            />
+          </div>
+        </div>
+
+        {/* Kontrolki */}
+        <div className="mt-6 flex justify-center gap-4">
+          <button
+            onClick={handlePlayPause}
+            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors text-lg"
+          >
+            {playing ? '⏸️ Pause' : '▶️ Play'}
+          </button>
+          <button
+            onClick={() => setPlaying(false)}
+            className="px-8 py-4 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors text-lg"
+          >
+            ⏹️ Stop
+          </button>
+        </div>
+
+      
+      </div>
+    </div>
+  );
+};
+
+export default App;

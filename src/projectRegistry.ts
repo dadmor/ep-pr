@@ -27,5 +27,17 @@ export const projectRegistry = [
     path: '/cambridge',
     component: lazy(() => import('./PROJECTS/cambridge/quiz')),
   },
+  {
+    id: 'musicGenerator',
+    name: 'Music Generator',
+    path: '/musicGenerator',
+    component: lazy(() => import('./PROJECTS/battle_music/generator')),
+  },
+  {
+    id: 'shootDecision',
+    name: 'Shoot Decision',
+    path: '/shootDecision',
+    component: lazy(() => import('./PROJECTS/short_decision/App')),
+  },
  
 ];
